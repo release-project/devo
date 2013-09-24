@@ -1,4 +1,4 @@
-Percept2 Online Visualisation
+Percept2 Online Visualisation (prototype).
 ================
 
 To compile the code you need rebar in your PATH.
@@ -14,3 +14,8 @@ percept2_online:start().
 ```
 
 Then point your browser to the indicated URL to open the Percept2 online visualisation page.
+
+To stop the application, type:
+```
+percept2_online:stop().
+```
