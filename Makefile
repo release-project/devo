@@ -1,5 +1,5 @@
 DIALYZER = dialyzer
-REBAR = ../cowboy-examples/rebar
+REBAR = rebar
 
 all: app
 
