@@ -8,6 +8,7 @@
 start() ->
     ok = application:start(crypto),
     ok = application:start(ranch),
+    ok = application:start(cowlib),
     ok = application:start(cowboy),
     ok = application:start(percept2_online),
     io:format("Point your browser at http://localhost:8080/ to use percept2_online.\n").
@@ -18,5 +19,6 @@ stop() ->
     ok = application:stop(crypto),
     ok = application:stop(ranch),
     ok = application:stop(cowboy),
+    ok = application:stop(cowlib),
     ok = application:stop(percept2_online),
     error_logger:tty(true).
