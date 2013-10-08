@@ -2,28 +2,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
     <title>Percept2 Online Visualisation</title>
-    <script type="text/javascript">
-      var originalHeight = 620;
-      var originalWidth = 1000;
-      
-      //drawing related constants
-      var cx = 500;
-      var originalcx = cx;
-      var cy = 315;
-      var originalcy = cy;
-      var rx = 150;
-      var ry = 150;
-      var boxSize = 30;
-    
-    </script>
-    <!-- <script src="/static/jquery.min.js"></script> -->
-    <script type="text/javascript" src="static/lib/d3.v2.js"></script>
-    <script type="text/javascript" src="static/lib/jquery-1.8.3.js"></script>
-    <script type="text/javascript" src="static/lib/jquery-ui.js"></script>
-    <script type="text/javascript" src="static/lib/detect-zoom-master/detect-zoom.js"></script>
-    <!--<script type="text/javascript" src="slider.js"></script> -->
-    <script type="text/javascript" src="static/zoom.js"></script>
-    <link rel="stylesheet" type="text/css" href="static/style.css">
+    <script src="/static/jquery.min.js"></script>
     <script type="text/javascript">
       
       var websocket;
@@ -66,7 +45,6 @@
                     disconnect();}
                else 
                 {
-                  start();
                  start_profile(input);
                  profile_on=1;
                 }
@@ -85,73 +63,31 @@
                     return test[i].value;
                     };
                     };
-                    };    
-        
-      function findNodeSelection()
+                    };      
+                    
+      function findNodeSelection(node)
        {
-          var fld = document.getElementById('nodeList');
-          var sizes = fld.options.length;
+          var test = document.getElementsByName(node);
+          var sizes = test.length;
           var nodes = "";
           for (i = 0; i < sizes; i++){
-            if (fld.options[i].selected){
-              nodes = nodes + fld.options[i].value + ";";
+          if (test[i].checked==true){
+             nodes = nodes + test[i].value + ";";
           };
           };
-       return nodes;
+        return nodes;
        };
-       
-       function removeNodeFromList(newnode)
-         {
-          var fld = document.getElementById('nodeList');
-          var values =[];
-          for (var i = 0; i < fld.options.length; i++) {
-             if (fld.options[i].selected) {
-               fld.remove(i);
-             }
-           }
-          };
-
-         function addNodeToList(newnode)
-         {
-          var x=document.getElementById("nodeList");
-          var option=document.createElement("option");
-          option.text=newnode.value;
-          option.value=newnode.value;
-          var sizes = x.length;
-          var nodes = "";
-          for (i = 0; i < sizes; i++){
-          if (x[i].value==newnode.value){
-             nodes = nodes + x[i].value + ";";
-          };
-          };
-         if ((nodes=="") && (newnode.value!="")){
-              try
-                          {
-                          // for IE earlier than version 8
-                          x.add(option,x.options[null]);
-                          }
-                          catch (e)
-                          {
-                          x.add(option,null);
-                          }
-                          
-                         }};
-        
+           
 
       function start_profile(input)
       {
          var featureS =  findFeatureSelection("feature");
-         var nodeS = findNodeSelection();
+         var nodeS = findNodeSelection("node");
          var txt = 'start_profile:'+featureS+':'+ nodeS;
-         if (nodeS=="")
-            {
-            showScreen('<span style="color: red;">No node has been selected!</span>');
-            }
-         else {
-          setTimeout(function(){websocket.send(txt)}, 1000);
-          }
+         setTimeout(function(){websocket.send(txt)}, 1000);
       };
-           
+         
+      
         
       
       function sendTxt() {
@@ -176,8 +112,6 @@
 
       function onMessage(evt) { 
           showScreen('<span style="color: blue;">' + evt.data+ '</span>'); 
-         console.log(evt.data);
-         parse(evt.data);
       };  
 
       function showScreen(txt) { 
@@ -205,17 +139,12 @@
           <input type="radio" name="feature" value="migration">Process migration <br>
           <input type="radio" name="feature" value="rq_migration">Run-queue length and process migration<br>
           <input type="radio" name="feature" value="inter_node">Inter-node communication <br>
-          <input type="radio" name="feature" value="s_group">S_group operations<br>
+          <input type="radio" name="feature" value="s_group">s_group operations<br>
         <p> Please select the node(s) you would like to monitor:<p>
-           <select id="nodeList"  size=5 style="width: 150px;" multiple>
-        <!--  <option name="node" value="node1@127.0.0.1">node1@127.0.0.1</option>
-           <option name="node" value="node2@127.0.0.1">node2@127.0.0.1</option>
-           <option name="node" value="node3@127.0.0.1">node3@127.0.0.1</option>
-           <option name="node" value="node4@127.0.0.1">node4@127.0.0.1</option> -->
-          </select>
-          <button type="button" onclick="removeNodeFromList()">Remove Selected Nodes</button> 
-          <input type='text' id="newnode" value="node@domain">
-          <button type="button" onclick="addNodeToList(newnode)">Add Node</button> <br><br>
+          <input type="checkbox" name="node" value="node1@127.0.0.1" CHECKED>node1@127.0.0.1<br>
+          <input type="checkbox" name="node" value="node2@127.0.0.1">node2@127.0.0.1<br> 
+          <input type="checkbox" name="node" value="node3@127.0.0.1">node3@127.0.0.1<br> 
+          <input type="checkbox" name="node" value="node4@127.0.0.1">node4@127.0.0.1<br> <br>
           <input type='text' id="server" value="ws://localhost:8080/websocket">
           <button type="button" onclick="toggle_connection(this.form)">Start/Stop Visualisation</button>
       </form>
@@ -231,21 +160,6 @@
 	<button id="clear" onclick="clearScreen()" >Clear text</button>
 	<div id="output"></div>
       </div>
-
-      <script type="text/javascript" src="static/body.js"></script>
-    <div class="block">
-      <div id="svgdiv" class="left">
-        <span id="loading">Loading...</span>
-      </div>
-      <div class="right">
-        <form id="options">
-          <div>
-            <span>View size on screen:&nbsp;</span><input type="checkbox" id="usage" /><br />
-            <!--<input type="button" id="pause" value="Pause" onclick="pauseAnimation()" /><br /> -->
-          </div>
-        </form>
-      </div>
-    </div>
 
   </body>
 </html> 
