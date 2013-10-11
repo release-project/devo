@@ -51,14 +51,16 @@ websocket_info({timeout, _Ref, stop_profile}, Req, State) ->
     {shutdown, Req, State};
 websocket_info({timeout, _Ref, _Msg}, Req, State) ->
     Cnt = State#state.count,
-    StateStr=case State#state.cmd of 
-                 migration ->
+    StateStr=case lists:member(State#state.cmd,
+                               [migration, rq_migration])
+             of 
+                 true ->
                      Data = [{From, To, Times}||
                                 {{From, To}, Times}<-State#state.data],
                      lists:flatten(
                        io_lib:format("{~.3f,~p}.", 
                                      [Cnt*200/1000,Data]));
-                 _ ->
+                 false ->
                      lists:flatten(
                        io_lib:format("{~.3f,~p}.", 
                                      [Cnt*200/1000,
