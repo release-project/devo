@@ -143,9 +143,15 @@
          var featureS =  findFeatureSelection("feature");
          var nodeS = findNodeSelection();
          var txt = 'start_profile:'+featureS+':'+ nodeS;
-         setTimeout(function(){websocket.send(txt)}, 1000);
+         if (nodeS=="")
+            {
+            showScreen('<span style="color: red;">No node has been selected!</span>');
+            }
+         else {
+          setTimeout(function(){websocket.send(txt)}, 1000);
+          }
       };
-             
+           
         
       
       function sendTxt() {
