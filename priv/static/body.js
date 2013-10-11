@@ -500,10 +500,12 @@ function parseMigration(input){
 		var inputSplit = input.split("[");
 		var time = inputSplit[0];
 		time = time.substring(1,time.length-1);
-		//console.log("time",time);
+		//console.log(0,"input",input);
+		//console.log(time);
 		alterTime(time);
 		var arr = inputSplit[1];
 		var migrationsRaw = arr.split("}");
+		console.log(arr, migrationsRaw);
 		for (var i = 0; i < migrationsRaw.length-2; i++){
 			
 			var rawMigration;
@@ -515,21 +517,25 @@ function parseMigration(input){
 			} else if(i == 0) {
 				rawMigration = migrationsRaw[i].split(",");
 				from = rawMigration[0];
-				from = from.substring(1,from.length);
-				to = rawMigration[1];
+				from = parseInt(from.substring(1,from.length))-1;
+				to = parseInt(rawMigration[1])-1;
 				size = rawMigration[2];
 
+				console.log(rawMigration);
 				//rawMigration = migrationsRaw[i].substring[1]
 			} else {
 				rawMigration = migrationsRaw[i].split(",");
-				from = rawMigration[1];
-				from = from.substring(1,from.length);
-				to = rawMigration[2];
+				from = rawMigration[1].trim();
+				from = parseInt(from.substring(1,from.length))-1;
+				to = parseInt(rawMigration[2])-1;
 				size = rawMigration[3];
 
+				console.log(rawMigration, from, to);
+
 			}
-			migrateProcess(from, to, size);
 			//console.log(i, time, from, to, size);
+			migrateProcess(from, to, size);
+			
 			
 		}
 }
@@ -668,12 +674,18 @@ function migrateProcess(from, to, size){
 
 	//var from = d.queue;
 	//var to = d.process.queues[previousQueueID];
-	//console.log(previousQueueID, d.process.queues,from, to); //log
+	//console.log(from, to); //log
 	var fromX = parseInt(svg.select("#border"+from).attr("x")) + (boxSize/2);
 	var fromY = parseInt(svg.select("#border"+from).attr("y")) + (boxSize/2);
-
+//console.log(fromX, fromY);
+//console.log(svg.select("#border"+to));
 	var toX = parseInt(svg.select("#border"+to).attr("x")) + (boxSize/2);
+
+	//console.log(fromX, fromY, toX);
 	var toY = parseInt(svg.select("#border"+to).attr("y")) + (boxSize/2);
+
+	//console.log(fromX, fromY, toX, toY);
+
 	var dataset = order;
 
 	var centrePoint = Math.abs(findOrder(getQueue(dataset,from)) - findOrder(getQueue(dataset,to)));
