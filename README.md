@@ -19,3 +19,5 @@ To stop the application, type:
 ```
 deevo:stop().
 ```
+
+This is still a prototype.
