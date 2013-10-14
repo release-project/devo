@@ -20,7 +20,19 @@ terminate(_Reason, _Req, _State) ->
 	ok.
 
 get_html() ->
-	{ok, Cwd} = file:get_cwd(),
-	Filename =filename:join([Cwd, "priv", "html_ws_client.html"]),
-	{ok, Binary} = file:read_file(Filename),
-	Binary.
+    {ok, Cwd} = file:get_cwd(),
+    Filename =filename:join([Cwd, "priv", "html_ws_client.html"]),
+    case filelib:is_file(Filename) of 
+        true ->
+            {ok, Binary} = file:read_file(Filename),
+            Binary;
+        false ->
+            case code:lib_dir(devo) of
+                {error, _Reason} ->
+                    throw({error, "I could not find where Devo is installed."});
+                LibDir ->
+                    Filename1 =filename:join([LibDir, "priv", "html_ws_client.html"]),
+                    {ok, Binary} = file:read_file(Filename1),
+                    Binary
+            end
+    end.
