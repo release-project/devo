@@ -1,4 +1,4 @@
-Deevo -- Online SD Erlang Profiling and Visualisation
+Devo -- Online SD Erlang Profiling and Visualisation
 =====================================================
 
 To compile the code you need rebar in your PATH.
@@ -10,14 +10,14 @@ $ make
 
 You can then start the online visualisation from an Erlang node with the following command:
 ```
-deevo:start().
+devo:start().
 ```
 
-Then point your browser to the indicated URL to open the Deevo visualisation page.
+Then point your browser to the indicated URL to open the Devo visualisation page.
 
 To stop the application, type:
 ```
-deevo:stop().
+devo:stop().
 ```
 
 This is still a prototype.
