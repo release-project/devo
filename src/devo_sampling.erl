@@ -148,16 +148,6 @@ check_sample_items_1([], Acc) ->
     lists:usort(Acc).
 
 
-check_out_dir(_) when ?online ->
-    ok;
-check_out_dir(Dir) ->
-    case filelib:is_dir(Dir) of 
-        false -> error(lists:flatten(
-                         io_lib:format(
-                           "Invalid directory:~p", [Dir])));
-        true -> ok
-    end.
-    
 %%@doc Start the profiler and collects information about the system.
 %%
 %% The type of information collected is specified by `Items': 
@@ -191,7 +181,7 @@ check_out_dir(Dir) ->
 %% for the whole duration until the entry function returns; otherwise it profiles 
 %% the system for the time period specified. The system is probed at the default 
 %% time interval, which is 10 milliseconds. It is also possible to stop the sampling 
-%% manually using <a href="percept2_sampling.html#stop-0">stop/0</a>,
+%% manually using <a href="devo_sampling.html#stop-0">stop/0</a>,
 %%
 %% `OutDir' tells the tool where to put the data files generated. A data file is generated 
 %% for each type of information in `Items'. For an item `A', the name of the data file would be 
@@ -214,9 +204,6 @@ check_out_dir(Dir) ->
 %% path leading to this file, then click on the `Generate Graph' button. This should leads to a page showing 
 %% the graph. The screenshot next shows an example output.
 %%
-%%  <img src="percept2_sample_mem.png"
-%%  alt="the front page of Percept2"  width="850" height="500"> </img>
-%%
 -spec(start(Items :: [sample_item()],
             EntryOrTime :: entry_mfa()  | seconds()|infinity,
             OutDir :: file:filename(),
@@ -232,9 +219,6 @@ start(Items, Entry={_Mod, _Fun, _Args}, OutDir, Receiver) ->
     start(Items, Entry, ?INTERVAL, fun(_) -> true end, OutDir, Receiver).
 
 %%@doc Start the profiler and collects information about the system.
-%%
-%% Different from <a href="percept2_sampling.html#start-3">start/3</a>,
-%% this function allows the user to specify the time interval.
 -spec(start(Items :: [any()], EntryOrTime :: entry_mfa()  | seconds()|infinity,
             TimeInterval :: milliseconds(), OutDir :: file:filename(),
             Receiver ::{atom(), node()}) -> 
@@ -251,25 +235,21 @@ start(Items, Entry={_Mod, _Fun, _Args}, TimeInterval, OutDir, Receiver) ->
 %% Apart from allowing the user to specify the time interval, this 
 %% function also allows the user to supply a filter function, so that 
 %% only those data that satisfy certain condition are logged.
-%% See <a href="percept2_sampling.html#start-3">start/3</a>.
 -spec(start(Items :: [any()], EntryOrTime :: entry_mfa()  | seconds()|infinity,
             TimeInterval :: milliseconds(), fun((_) ->  boolean()),
             OutDir :: file:filename(),
             Receiver ::{atom(), node()}) -> 
                ok).  %%[sample_items()],
 start(Items, _Entry={Mod, Fun, Args}, TimeInterval, FilterFun, OutDir,Receiver) ->
-    ok=check_out_dir(OutDir),
     Items1=check_sample_items(Items),
     Pid = start_sampling(Items1,TimeInterval,FilterFun,OutDir,Receiver),
     erlang:apply(Mod, Fun, Args),
     stop(Pid);
 start(Items, infinity, TimeInterval, FilterFun, OutDir, Receiver)->
-    ok=check_out_dir(OutDir),
     Items1=check_sample_items(Items),
     start_sampling(Items1,TimeInterval,FilterFun,OutDir,Receiver);
 start(Items, Time, TimeInterval, FilterFun, OutDir,Receiver)
   when is_integer(Time)->
-    ok=check_out_dir(OutDir),
     Items1=check_sample_items(Items),
     try 
         Pid=start_sampling(Items1,TimeInterval,FilterFun,OutDir,Receiver),
@@ -297,7 +277,7 @@ start_sampling(Items,TimeInterval,FilterFun,OutDir,Receiver) ->
 %%@doc Stop the sampling.
 -spec (stop() ->{error, not_started}|ok).
 stop() ->   
-    case whereis(percept2_sampling) of 
+    case whereis(devo_sampling) of 
         undefined ->
             {error, not_started};
         Pid ->
@@ -310,25 +290,16 @@ stop(Pid) ->
     ok.
 
 %%@private
-init(StartTs, Items, Interval, FilterFun, OutDir, Receiver) when ?online ->
-    register(percept2_sampling, self()),
-    sampling_loop(StartTs,Interval,Items,FilterFun,OutDir, Receiver);
-init(StartTs, Items, Interval, FilterFun, OutDir, Receiver) ->
-    register(percept2_sampling, self()),
-    create_ets_tables(Items),
+init(StartTs, Items, Interval, FilterFun, OutDir, Receiver)->
+    register(devo_sampling, self()),
     sampling_loop(StartTs,Interval,Items,FilterFun,OutDir, Receiver).
   
 sampling_loop(StartTs,Interval,Items,FilterFun,OutDir,Receiver) ->
     receive
-        stop when ?online->
-            ok;
         stop ->
-            write_data(Items, OutDir);
-        {timeout, _TimerRef, stop} when ?online ->
             ok;
         {timeout, _TimerRef, stop} ->
-            write_data(Items, OutDir),
-            io:format("Done.\n")    
+            ok
     after Interval->
             do_sampling(Items,StartTs,Receiver),
             sampling_loop(StartTs,Interval,Items,FilterFun,OutDir,Receiver)
@@ -418,12 +389,9 @@ do_sample({message_queue_len,Pid},StartTs,Receiver) ->
     ?dbg(0, "Message queue length:\n~p\n", [Info]),
     insert_data(Info,message_queue_len,Receiver).
 
-insert_data(Info,Tab,Receiver) ->
-    if ?online ->
-            %% io:format("Info:~p\n", [Info]),
-            Receiver ! Info;
-       true ->ets:insert(mk_ets_tab_name(Tab), Info)
-    end.
+insert_data(Info,_Tab,Receiver) ->
+    Receiver ! Info.
+   
 
 do_write_sample_info(Item, OutDir) ->
     OutFile = filename:join(OutDir, mk_file_name(Item)),
@@ -510,7 +478,3 @@ write_data([], _) ->
 to_megabytes(Bytes) ->
     Bytes/1000000.
 
-%% Example commands
-%% percept2_sampling:sample( ['all'[["c:/cygwin/home/hl/test"], 5, 40, 2, 4, 0.8, 
-%%                                                                      ["c:/cygwin/home/hl/test"],8]},"../profile_data").
-%%percept2_sampling:sample([all, {'message_queue_len', 'percept2_db'}], {percept2, analyze, [["sim_code.dat"]]}, ".").
