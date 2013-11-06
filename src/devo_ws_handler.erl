@@ -101,6 +101,9 @@ websocket_info(Info={s_group, _Node, _Fun, _Args}, Req, State) ->
 websocket_info(Info={cpu, _Cpu}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
     {reply, {text, list_to_binary(InfoStr)}, Req, State};
+websocket_info(Info={s_group_init_config, _Config}, Req, State) ->
+    InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
+    {reply, {text, list_to_binary(InfoStr)}, Req, State};
 websocket_info(start_profile, Req, State) ->
     erlang:start_timer(1, self(), <<"Online profiling started...!">>),
     {ok, Req, State};
@@ -159,11 +162,32 @@ start_profiling(rq_migration, [Node|_]) ->
                     devo_trace:start_trace(migration, Node, {devo, node()})
             end
     end;
-start_profiling(inter_node, Nodes) ->
-    erlang:start_timer(1, self(), <<"Online profiling started...!">>),
-    devo_trace:start_trace(inter_node, Nodes, {devo, node()});
-start_profiling(s_group, Nodes) ->
-    devo_trace:start_trace(s_group, Nodes, {devo, node()});
+start_profiling(inter_node, Nodes=[N|_Ns]) ->
+    case get_init_s_group_config(N) of 
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        undefined ->
+            self()!{s_group_init_config, []},
+            erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+            devo_trace:start_trace(inter_node, Nodes, {devo, node()});
+        {ok, NodeGrps} ->
+            self()!{s_group_init_config, NodeGrps},
+            erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+            devo_trace:start_trace(inter_node, Nodes, {devo, node()})            
+    end;
+start_profiling(s_group, Nodes=[N|_Ns]) ->
+    case rpc:call(N, application, get_env, [kernel, s_groups]) of 
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        undefined ->
+            self()!{s_group_init_config, []},
+            devo_trace:start_trace(s_group, Nodes, {devo, node()});
+        {ok, NodeGrps} ->
+            self()!{s_group_init_config, NodeGrps},
+            devo_trace:start_trace(s_group, Nodes, {devo, node()})
+    end;
 start_profiling(Cmd, _Nodes) ->
     io:format("start_profiling: unnexpected command:~p\n", [Cmd]),
     ok.
@@ -202,3 +226,18 @@ stop_profiling(Cmd, _Nodes) ->
     io:format("stop_profiling: unnexpected command:~p\n", [Cmd]),
     ok. 
 
+get_init_s_group_config(Node) ->
+    case rpc:call(Node, application, get_env, [kernel, s_groups]) of
+        {badrpc, Reason} ->
+            {badrpc, Reason};
+        undefined ->
+            {ok, []};
+        {ok, NodeGrps} ->
+            Grps = [grp_tuple(NodeGrp)||NodeGrp<-NodeGrps],
+            {ok,Grps}
+    end.
+
+grp_tuple({Name, Nodes}) ->
+    {Name, Nodes};  
+grp_tuple({Name, _, Nodes}) ->
+    {Name, Nodes}.
