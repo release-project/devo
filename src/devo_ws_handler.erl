@@ -177,7 +177,7 @@ start_profiling(inter_node, Nodes=[N|_Ns]) ->
             devo_trace:start_trace(inter_node, Nodes, {devo, node()})            
     end;
 start_profiling(s_group, Nodes=[N|_Ns]) ->
-    case rpc:call(N, application, get_env, [kernel, s_groups]) of 
+    case get_init_s_group_config(N) of 
         {badrpc, Reason} ->
             io:format("Devo failed to start profiling for reason:\n~p\n",
                       [Reason]);
