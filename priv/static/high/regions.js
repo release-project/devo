@@ -12,8 +12,19 @@ var currentTime = 0;
 var svg;
 var times = [];
 
+var conn = new WebSocket('ws://localhost:8081');
+//var conn = new WebSocket('ws://cs.kent.ac.uk/~rb440/:8081');
+conn.onopen = function(e) {
+    console.log("Connection established!");
+};
+
+conn.onmessage = function(e) {
+    parseCircles(e.data);
+};
+
 /** A labelled circle */
-function Circle(label,r,x,y) {
+function Circle(id,label,r,x,y) {
+	this.id = id;
 	this.label = label;
 	this.r = r;
 	this.x = x;
@@ -35,11 +46,12 @@ function Point(x,y) {
 }
 
 
-function Node(label,region){
+function Node(label,region, regionText){
 	this.label = label;
 	x = 0.0;
 	y = 0.0;
-	this.region = region;
+	this.region = region; //rectangle
+	this.regionText = regionText;
 	horizontal = 0;
 	vertical = 0;
 }
@@ -96,6 +108,7 @@ function findNode(label, nodes){
 			return nodes[i];
 		}
 	} 
+	return null;
 }
 
 function stringCompare(s1, s2){
@@ -111,6 +124,11 @@ function stringCompare(s1, s2){
 	}
 	return true;
 
+}
+
+// Generates a hash for creating unqiue circle or node IDs
+function generateHash(s){
+	return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);              
 }
 
 function next(){
@@ -152,6 +170,8 @@ function prepareHighLevel(){
 	var b = new Circle(b, 131.62446830546693, 72.59103641456582, 63.29113497213361);
 	circles.push(a);circles.push(b);circles.push(c);
 
+	console.log(circles);
+
 	//to be replaced with actual node information
 	zones = ["a", "ab", "c"];
 	rectangles = findZoneRectangles(zones, circles);
@@ -163,4 +183,106 @@ function prepareHighLevel(){
 	}
 	
 	console.log(circles, nodes, rectangles);
+}
+
+function parseComms(commsFile){
+	var input = commsFile;
+					
+	//console.log(input[0], times);	
+	for (var i = 0; i < input.length; i++){
+	//for (var i = 0; i < 2; i++){
+		var timeInstance = input[i];
+
+		var interactions = timeInstance.split(",\n");
+		
+		var timeInt = "";
+		if (i == 0) {
+			timeInt = parseInt(interactions[0].substring(1));
+		} else {
+			timeInt = parseInt(interactions[0].substring(2));
+		}
+
+		var time = new Time(timeInt);
+		times.push(time);
+
+		for (var j = 1; j < interactions.length; j++){
+			var interactionDetails = interactions[j].split(",");
+
+			var start = parseInt(interactionDetails[0].substring(8));
+			var finish = parseInt(interactionDetails[1].substring(4));
+			var count = parseInt(interactionDetails[2]);
+
+			//console.log(time);
+
+			var startNode = findNode("node"+start, nodes);
+			var finishNode = findNode("node"+finish, nodes);
+			//console.log(startNode, start, nodes);
+			var edge = new Edge(startNode, finishNode, count);
+
+			time.interactions.push( edge );
+
+			//console.log(start, finish, count);
+		}
+
+	}
+	iterateGraph(nodes, time.interactions);
+	//console.log(times);
+
+}
+
+function parseCircles(input){
+
+	var circleFile = input.split("\n");
+	//use 1 as first row of input are labels
+	for (var i = 1; i < circleFile.length-1; i++){
+		var result = circleFile[i].split(",");
+		//console.log(result);
+		var c = new Circle(result[0].trim(), parseInt(result[3]), parseInt(result[1]), parseInt(result[2]));
+		circles.push(c);	
+	}
+
+	console.log(circles);
+
+	zones = ["a", "ab", "c"];
+	rectangles = findZoneRectangles(zones, circles);
+
+}
+
+
+function parseHighTopology(input) {
+	var grpText = input.split("{");
+	for (var i = 2; i < grpText.length; i++){
+		var grpDetails = grpText[i].split(",");
+		var grpName = grpDetails[0];
+
+		var id = String.fromCharCode(circles.length + 65);
+		var c = new Circle(id, grpName, 0, 0, 0);
+		circles.push(c);
+
+		console.log(grpName, id, c);
+
+		for (var j = 1; j < grpDetails.length; j++){
+			var rawNodeName = grpDetails[j];
+			if (rawNodeName == "") {
+				continue;
+			}
+			var at = rawNodeName.indexOf("@");
+			var start = j==1 ? 2 : 1;
+			var nodeName = rawNodeName.substring(start,at);
+
+			console.log(nodeName);
+
+			var nodeFound = findNode(nodeName, nodes);
+			if (nodeFound == null) {
+				var node = new Node(nodeName, null, id);
+				nodes.push(node);
+			} else {
+				nodeFound.regionText = nodeFound.regionText+id;
+				console.log("node found");
+			}
+		}
+
+	}
+	console.log(circles, nodes);
+
 }

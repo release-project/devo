@@ -3,10 +3,11 @@ var svg;
 function drawGraph(nodes, edges, rectangles, circles){
 	console.log(nodes, edges, rectangles, circles);
 
-	svg = d3.select("#highSvg").append("svg")
+	svg = d3.select("#highLevel").append("svg")
 	    .attr("width", 800)
 	    .attr("height", 600)
 	    .attr("version", 1.1)
+	    .attr("id","highLevelSvg")
 	    .attr("xmlns", "http://www.w3.org/2000/svg");
 
 
