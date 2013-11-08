@@ -9,6 +9,8 @@ var k;
 var rectangles;
 var currentTime = 0;
 var eulerText = "";
+var width = 800;
+var height = 600;
 
 var svg;
 var times = [];
@@ -173,6 +175,10 @@ function animate(){
 	,10);
 }
 
+function applyForceModel(){
+
+}
+
 
 function parseComms(commsFile){
 
@@ -201,7 +207,7 @@ function parseComms(commsFile){
 
 		var time = new Time(timeInt);
 		time.interactions = [];
-
+		d3.select("#time").text(timeInt+" ms");
 		//console.log(time, interactions);
 
 		times.push(time);
@@ -232,7 +238,7 @@ function parseComms(commsFile){
 
 			//console.log(start, finish, count);
 		}
-
+		edges = time.interactions;
 //	}
 	//iterateGraph(nodes, time.interactions);
 	drawEdges(time.interactions);
@@ -268,54 +274,70 @@ function parseCircles(input){
 		n.region = findRectangleFromLabel(n.regionText, rectangles);
 	}
 
+	drawGraph(nodes, null, rectangles, circles);
+
 }
 
 
 function parseHighTopology(input) {
-	var grpText = input.split("{");
-	for (var i = 2; i < grpText.length; i++){
-		var grpDetails = grpText[i].split(",");
-		var grpName = grpDetails[0];
 
-		var id = String.fromCharCode(circles.length + 65);
-		var c = new Circle(id, grpName, 0, 0, 0);
-		circles.push(c);
+	if (input == "{s_group_init_config, []}") {
+		//no initial configuration
+		parseCircles("\n a,"+width/2 + "," + height/2 + "," + height/2);
+	} else {
+		var grpText = input.split("{");
+		for (var i = 2; i < grpText.length; i++){
+			var grpDetails = grpText[i].split(",");
+			var grpName = grpDetails[0];
 
-		console.log(grpName, id, c);
+			var id = String.fromCharCode(circles.length + 65);
+			var c = new Circle(id, grpName, 0, 0, 0);
+			circles.push(c);
 
-		for (var j = 1; j < grpDetails.length; j++){
-			var rawNodeName = grpDetails[j];
-			if (rawNodeName == "") {
-				continue;
+			console.log(grpName, id, c);
+
+			for (var j = 1; j < grpDetails.length; j++){
+				var rawNodeName = grpDetails[j];
+				if (rawNodeName == "") {
+					continue;
+				}
+				var at = rawNodeName.indexOf("@");
+				var start = j==1 ? 2 : 1;
+				var nodeName = rawNodeName.substring(start,at);
+
+				console.log(nodeName);
+
+				var nodeFound = findNode(nodeName, nodes);
+				if (nodeFound == null) {
+					var node = new Node(nodeName, null, id);
+					nodes.push(node);
+				} else {
+					nodeFound.regionText = nodeFound.regionText+id;
+					console.log("node found");
+				}
 			}
-			var at = rawNodeName.indexOf("@");
-			var start = j==1 ? 2 : 1;
-			var nodeName = rawNodeName.substring(start,at);
 
-			console.log(nodeName);
+		}
+		console.log(circles, nodes);
 
-			var nodeFound = findNode(nodeName, nodes);
-			if (nodeFound == null) {
-				var node = new Node(nodeName, null, id);
-				nodes.push(node);
-			} else {
-				nodeFound.regionText = nodeFound.regionText+id;
-				console.log("node found");
-			}
+		eulerText = "";
+		for (var i = 0; i < nodes.length; i++){
+			eulerText = eulerText + nodes[i].regionText + " ";
 		}
 
-	}
-	console.log(circles, nodes);
+		console.log(eulerText);
 
-	eulerText = "";
-	for (var i = 0; i < nodes.length; i++){
-		eulerText = eulerText + nodes[i].regionText + " ";
+		conn.send(eulerText);
 	}
 
-	console.log(eulerText);
 
-	conn.send(eulerText);
+}
 
-	
+function parseInput(input){
 
+	if (input.substring(0,20) == "{s_group_init_config"){
+		parseHighTopology(input);
+	} else {
+		parseComms(input);
+	}
 }

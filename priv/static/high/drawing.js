@@ -6,11 +6,18 @@ function drawGraph(nodes, edges, rectangles, circles){
 	console.log(nodes, edges, rectangles, circles);
 
 	svg = d3.select("#highLevel").append("svg")
-	    .attr("width", 800)
-	    .attr("height", 600)
+	    .attr("width", width)
+	    .attr("height", height)
 	    .attr("version", 1.1)
 	    .attr("id","highLevelSvg")
 	    .attr("xmlns", "http://www.w3.org/2000/svg");
+
+	svg.append("text")
+		.attr("id", "time")
+		.attr("x", 10)
+		.attr("y", 20)
+		.attr("width", 50)
+		.attr("height", 20);
 
 
 
@@ -34,6 +41,9 @@ function drawGraph(nodes, edges, rectangles, circles){
 				return circle.y
 			})
 			.attr("class","euler")
+			.attr("id", function(d){
+				return "circle"+circle.id;
+			})
 			.attr("style","fill: none; stroke:blue;");
 
 
@@ -51,22 +61,12 @@ function drawGraph(nodes, edges, rectangles, circles){
 			})
 			.attr("width", 20)
 			.attr("height", 20)
-			.attr("style", "font-weight:bold; font-size:1.5em; font-family:sans-serif;");
+			.attr("style", "font-weight:bold; font-size:1.5em; font-family:sans-serif;")
+			.attr("id","label"+circle.id);
 
 	}
 
-	for (var i = 0; i < rectangles.length; i++) {
-		//context.fillRect(rectangles[i].x * multiplier, rectangles[i].y * multiplier, rectangles[i].width * multiplier, rectangles[i].height * multiplier);
-
-		svg.select("g")
-			.append("rect")
-			.attr("x", rectangles[i].x * multiplier)
-		    .attr("y", rectangles[i].y * multiplier)
-		    .attr("width", rectangles[i].width * multiplier)
-		    .attr("height", rectangles[i].height * multiplier)
-		    .attr("class","startingRect")
-		    .attr("style", "fill: rgba(0, 255, 0, 0.5)");
-	}
+	drawRectangles(true);
 
 	k = c * Math.sqrt(800 / nodes.length);
 	//console.log(k,c, nodes.length);
@@ -82,15 +82,15 @@ function drawGraph(nodes, edges, rectangles, circles){
 		.attr("r",5)
 		.attr("cx",function (d,i){
 			
-			var cols = Math.round(Math.sqrt(nodesInRegion(d.region).length));
+			//var cols = Math.round(Math.sqrt(nodesInRegion(d.region).length));
 
 			//console.log(cols, d.label);
 			//console.log((i % cols)+1, i, cols, nodes.length, d.region.width, (d.region.width / (cols + 1)));
-			var cx = ( ((i % cols)+1) * (d.region.width / (cols + 1)) ) + d.region.x;
+			//var cx = ( ((i % cols)+1) * (d.region.width / (cols + 1)) ) + d.region.x;
 			 //var cx = (Math.random() * d.region.width) + d.region.x;
-			d.x = cx* multiplier;
+			//d.x = cx* multiplier;
 			//console.log("x", d);
-			return parseInt(d.x) ;
+			return findNodeStartX(d, i, true);
 
 			//return d.region.width * multiplier;
 			//return 10;
@@ -99,12 +99,12 @@ function drawGraph(nodes, edges, rectangles, circles){
 			//console.log("y", d.region.y * multiplier);
 			//d.y = d.region.y;
 
-			var cols = Math.round(Math.sqrt(nodesInRegion(d.region).length));
+			//var cols = Math.round(Math.sqrt(nodesInRegion(d.region).length));
 
 			//var cy = d.region.y + ((Math.floor(i / cols)+1) * (d.region.height / (cols + 1)));
 			//console.log(cy, d.region.height, d.region.y, Math.floor(i / cols)+1 , (d.region.height / (cols + 1)));
 
-			var i = nodesInRegion(d.region).indexOf(d);
+			//var i = nodesInRegion(d.region).indexOf(d);
 
 			/*
 			console.log(
@@ -117,13 +117,14 @@ function drawGraph(nodes, edges, rectangles, circles){
 				((Math.floor(i % cols)+1) * (d.region.height / (cols + 1)))
 			);
 */
-			var cy = ((Math.floor(i / cols)+1) * (d.region.height / (cols + 1))) + d.region.y
+			//var cy = ((Math.floor(i / cols)+1) * (d.region.height / (cols + 1))) + d.region.y
 
 			//var cy = (Math.random() * d.region.height) + d.region.y;
 			//var cy = d.region.y + 50;
-			d.y = cy* multiplier;
-			return parseInt(d.y);
+			//d.y = cy* multiplier;
+			//return parseInt(d.y);
 			//return 10;
+			return findNodeStartY(d, i, true);
 		})
 		.attr("id", function(d){
 			return d.label;
@@ -131,6 +132,58 @@ function drawGraph(nodes, edges, rectangles, circles){
 		.attr("class","node")
 		.style("fill", "blue");
 	
+}
+
+function drawRectangles(multiplierSet){
+
+	d3.selectAll("rect").remove();
+
+	for (var i = 0; i < rectangles.length; i++) {
+	//context.fillRect(rectangles[i].x * multiplier, rectangles[i].y * multiplier, rectangles[i].width * multiplier, rectangles[i].height * multiplier);
+
+	svg.select("g")
+		.append("rect")
+		.attr("x", multiplierSet ? rectangles[i].x * multiplier : rectangles[i].x)
+	    .attr("y", multiplierSet ? rectangles[i].y * multiplier : rectangles[i].y)
+	    .attr("width", multiplierSet ? rectangles[i].width * multiplier : rectangles[i].width)
+	    .attr("height", multiplierSet ? rectangles[i].height * multiplier : rectangles[i].height)
+	    .attr("class","startingRect")
+	    .attr("style", "fill: rgba(0, 255, 0, 0.5)");
+}
+}
+
+function findNodeStartX(d, i, multiplierSet){
+	var cols = Math.round(Math.sqrt(nodesInRegion(d.region).length));
+
+	//console.log(cols, d.label);
+	//console.log((i % cols)+1, i, cols, nodes.length, d.region.width, (d.region.width / (cols + 1)));
+	var cx = ( ((i % cols)+1) * (d.region.width / (cols + 1)) ) + d.region.x;
+	 //var cx = (Math.random() * d.region.width) + d.region.x;
+	if (multiplierSet){
+		d.x = cx* multiplier;
+	} else {
+		d.x = cx;
+	}
+	
+	//console.log("x", d);
+	return parseInt(d.x) ;
+}
+
+
+function findNodeStartY(d, i, multiplierSet){
+
+	var cols = Math.round(Math.sqrt(nodesInRegion(d.region).length));
+
+	var i = nodesInRegion(d.region).indexOf(d);
+
+	var cy = ((Math.floor(i / cols)+1) * (d.region.height / (cols + 1))) + d.region.y
+
+	if (multiplierSet){
+		d.y = cy* multiplier;
+	} else {
+		d.y = cy;
+	}
+	return parseInt(d.y);
 }
 
 function drawEdges(edges){
@@ -162,4 +215,95 @@ function drawEdges(edges){
 		.attr("id", function(d){
 			return "edge" + d.source.label + d.target.label;
 		});
+}
+
+function moveCircle(id, newX, newY, newR) {
+
+	var duration = 1000;
+
+	var circleObj = findCircleId(id);
+	var circleSvg = d3.select("#circle"+id);
+
+	var origX = circleObj.x;
+	var origY = circleObj.y;
+	var origR = circleObj.r;
+
+	//move circle
+	circleSvg.transition()
+		.attr("cx", newX)
+		.attr("cy", newY)
+		.attr("r", newR)
+		.duration(duration);
+
+	circleObj.x = newX;
+	circleObj.y = newY;
+	circleObj.r = newR;
+
+//move circle label
+	d3.select("#label"+circleObj.id)
+		.transition()
+		.attr("x", function(){
+			return circleObj.x;
+		})
+		.attr("y", function(){
+			return (circleObj.y - circleObj.r)+25 ;
+		})
+		.duration(duration);
+
+//redraw rectangles
+	rectangles = [];
+	rectangles = findZoneRectangles(zones, circles);
+
+	for (var i = 0; i < nodes.length; i++) {
+		var n = nodes[i];
+		n.region = findRectangleFromLabel(n.regionText, rectangles);
+	}
+
+	drawRectangles(false);
+
+//move nodes
+	for (var i = 0; i < nodes.length; i++){
+		var node = nodes[i];
+		//console.log(node.regionText, id, )
+		if (node.regionText.indexOf(id) != -1){
+			//move node
+			node.x = findNodeStartX(node, i, false);
+			node.y = findNodeStartY(node, i, false);
+
+			d3.select("#"+node.label)
+				.transition()
+				.attr("cx", node.x)
+				.attr("cy", node.y)
+				.duration(duration);
+
+			for (var j = 0; j < edges.length; j++){
+				var edge = edges[j];
+
+				if (edge.source == node){
+					d3.select("#edge"+edge.source.label+edge.target.label)
+						.transition()
+						.attr("x1", node.x)
+						.attr("y1", node.y)
+						.duration(duration);
+
+					//alter source
+				}
+
+				if (edge.target == node) {
+					d3.select("#edge"+edge.source.label+edge.target.label)
+						.transition()
+						.attr("x2", node.x)
+						.attr("y2", node.y)
+						.duration(duration);
+
+					//alter target
+				}
+
+			}
+		}
+	}
+
+	//console.log(edges);
+	//drawEdges(edges);
+
 }
