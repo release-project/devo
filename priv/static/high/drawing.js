@@ -1,6 +1,8 @@
 var svg;
 
 function drawGraph(nodes, edges, rectangles, circles){
+	$("#highLevel").show();
+
 	console.log(nodes, edges, rectangles, circles);
 
 	svg = d3.select("#highLevel").append("svg")
@@ -128,9 +130,6 @@ function drawGraph(nodes, edges, rectangles, circles){
 		})
 		.attr("class","node")
 		.style("fill", "blue");
-
-		drawEdges(edges);
-
 	
 }
 
