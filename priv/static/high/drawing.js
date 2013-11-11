@@ -224,9 +224,9 @@ function moveCircle(id, newX, newY, newR) {
 	var circleObj = findCircleId(id);
 	var circleSvg = d3.select("#circle"+id);
 
-	var origX = circleObj.x;
-	var origY = circleObj.y;
-	var origR = circleObj.r;
+	var origX = circleSvg.attr("cx");
+	var origY = circleSvg.attr("cy");
+	var origR = circleSvg.attr("r");
 
 	//move circle
 	circleSvg.transition()
@@ -305,5 +305,82 @@ function moveCircle(id, newX, newY, newR) {
 
 	//console.log(edges);
 	//drawEdges(edges);
+
+}
+
+//adds an sgroup to the drawing based on the circle id;
+function addSGroup(id) {
+	var circle = findCircleId(id);
+	console.log(circle);
+
+	svg.select("g")
+		.append("circle")
+		.attr("r", function(){
+			circle.r = circle.r;
+			return circle.r
+		})
+		.attr("cx",function(){
+			circle.x = circle.x ;
+			return circle.x
+		})
+		.attr("cy",function(){
+			circle.y = circle.y;
+			return circle.y
+		})
+		.attr("class","euler")
+		.attr("id", function(d){
+			return "circle"+circle.id;
+		})
+		.attr("style","fill: none; stroke:blue;");
+
+	svg.select("g")
+		.append("text")
+		.text(function(){
+			return circle.label;
+		})
+		.attr("x", function(){
+			return circle.x;
+		})
+		.attr("y", function(){
+			return (circle.y - circle.r)+25 ;
+		})
+		.attr("width", 20)
+		.attr("height", 20)
+		.attr("style", "font-weight:bold; font-size:1.5em; font-family:sans-serif;")
+		.attr("id","label"+circle.id);
+
+	for (var i = 0; i < nodes.length; i++){
+		var node = nodes[i];
+		//console.log(node.regionText, id, )
+		if (node.regionText.indexOf(id) != -1){
+			//move node
+			node.x = findNodeStartX(node, i, false);
+			node.y = findNodeStartY(node, i, false);
+
+			//var nodeSvg = d3.select("#"+node.label);
+			//console.log(node.label, nodeSvg);
+
+			if ($("#"+node.label).length == 0){
+				svg.append("circle")
+					.attr("r",5)
+					.attr("cx",node.x)
+					.attr("cy",node.y)
+					.attr("id", node.label)
+					.attr("class","node")
+					.style("fill", "blue");
+			}
+		}
+	}
+}
+
+function deleteSGroup(input) {
+
+}
+
+function addNodes(input) {
+
+}
+
+function removeNodes(input) {
 
 }

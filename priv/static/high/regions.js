@@ -11,6 +11,9 @@ var currentTime = 0;
 var eulerText = "";
 var width = 800;
 var height = 600;
+var circleEnum = { TOPOLOGY: 1, ADD : 2, REMOVE : 3};
+var circleType = circleEnum.TOPOLOGY;
+
 
 var svg;
 var times = [];
@@ -22,7 +25,12 @@ conn.onopen = function(e) {
 };
 
 conn.onmessage = function(e) {
-    parseCircles(e.data);
+	if (circleType == circleEnum.TOPOLOGY){
+		parseCircles(e.data);
+	} else if (circleType == circleEnum.ADD) {
+		parseAddSGroupResponse(e.data);
+	}
+    
 };
 
 /** A labelled circle */
@@ -32,6 +40,7 @@ function Circle(id,label,r,x,y) {
 	this.r = r;
 	this.x = x;
 	this.y = y;
+	newCircle = false;
 }
 
 
@@ -143,15 +152,16 @@ function stringCompare(s1, s2){
 }
 
 // Generates a hash for creating unqiue circle or node IDs
+//not used
 function generateHash(s){
 	return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);              
 }
 
 function next(){
-	iterateGraph(nodes, times[currentTime].interactions);
+	iterateGraph(nodes, edges);
 }
 
-
+/*
 function animate(){
 	var m = 0;
 	var changeValue = 100;
@@ -173,12 +183,11 @@ function animate(){
 			next();
 		}
 	,10);
-}
+}*/
 
 function applyForceModel(){
 
 }
-
 
 function parseComms(commsFile){
 
@@ -258,6 +267,7 @@ function parseCircles(input){
 		c.r = parseInt(result[3]);
 		c.x = parseInt(result[1]);
 		c.y = parseInt(result[2]);
+		c.newCircle = false;
 		//var c = new Circle(result[0].trim(), , parseInt(result[1]), parseInt(result[2]));
 		//circles.push(c);	
 	}
@@ -335,9 +345,126 @@ function parseHighTopology(input) {
 
 function parseInput(input){
 
-	if (input.substring(0,20) == "{s_group_init_config"){
+	if (input.split(",")[2] == "new_s_group"){
+		parseAddSGroup(input)
+	} else if (input.split(",")[2] == "delete_s_group"){
+		deleteSGroup(input)
+	} else if (input.split(",")[2] == "add_nodes"){
+		addNodes(input)
+	} else if (input.split(",")[2] == "remove_nodes"){
+		removeNodes(input)
+	} else if (input.substring(0,20) == "{s_group_init_config"){
 		parseHighTopology(input);
 	} else {
 		parseComms(input);
+	}
+}
+
+function parseAddSGroup(input) {
+	//{s_group,'node1@127.0.0.1',new_s_group,[{aa, ['node1@127.0.0.1','node2@127.0.0.1']}]}.
+
+	var grpDetails = input.split(",");
+
+	var sgroupName = grpDetails[3].substring(2);
+	console.log(sgroupName, grpDetails);
+
+	var id = String.fromCharCode(circles.length + 65);
+
+	var circle = new Circle(id, sgroupName, -1, -1, -1);
+	circle.newCircle = true;
+	circles.push(circle);
+
+	for (var j = 4; j < grpDetails.length; j++) {
+		console.log(grpDetails[j]);
+		var rawName = grpDetails[j];
+		var at = rawName.indexOf("@");
+		
+		var start = j == 4 ? 3 : 1
+		var nodeName = rawName.substring(start, at);
+
+		var node = findNode(nodeName, nodes);
+
+		if (node == null){
+			node = new Node(nodeName, null, id);
+			nodes.push(node);
+		} else {
+			node.regionText = node.regionText + id;
+		}
+
+		//if node = null, create new node
+
+		//change node RegionText
+		//change node region
+
+
+		console.log(nodeName, node);
+	}
+
+	circleType = circleEnum.ADD;
+
+	eulerText = "";
+	for (var i = 0; i < nodes.length; i++){
+		//nodes[i].region = findRectangleFromLabel(nodes[i].regionText);
+		eulerText = eulerText + nodes[i].regionText + " ";
+	}
+
+	console.log(eulerText);
+
+	conn.send(eulerText);
+
+	//recalculate circles
+	//recalculate zones
+
+}
+
+function parseAddSGroupResponse(input) {
+
+	console.log(input);
+
+	var circleFile = input.split("\n");
+	
+	//use 1 as first row of input are labels
+	for (var i = 1; i < circleFile.length-1; i++){
+		var result = circleFile[i].split(",");
+		//console.log(result);
+
+		var c = findCircleId(result[0].trim());
+
+		if (c == null) {
+
+		} else {
+			
+			c.r = parseInt(result[3]) * multiplier;
+			c.x = parseInt(result[1]) * multiplier;
+			c.y = parseInt(result[2]) * multiplier;
+		}
+		
+		//var c = new Circle(result[0].trim(), , parseInt(result[1]), parseInt(result[2]));
+		
+			
+		//console.log(c);
+
+	}
+
+	console.log(circles);
+
+	zones = eulerText.split(" ");
+	zones.pop();
+	console.log(zones);
+	rectangles = findZoneRectangles(zones, circles);
+
+	for (var i = 0; i < nodes.length; i++) {
+		var n = nodes[i];
+		n.region = findRectangleFromLabel(n.regionText, rectangles);
+	}
+
+	for (var i = 0; i < circles.length; i++){
+		var c = circles[i];
+		if (c.newCircle){
+			c.newCircle = false;
+			addSGroup(c.id);
+		} else {
+			moveCircle(c.id, c.x, c.y, c.r);
+		}
 	}
 }
