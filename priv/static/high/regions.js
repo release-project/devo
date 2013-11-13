@@ -352,7 +352,7 @@ function parseInput(input){
 	} else if (input.split(",")[2] == "add_nodes"){
 		parseAddNodes(input)
 	} else if (input.split(",")[2] == "remove_nodes"){
-		removeNodes(input)
+		parseRemoveNodes(input)
 	} else if (input.substring(0,20) == "{s_group_init_config"){
 		parseHighTopology(input);
 	} else {
@@ -568,5 +568,34 @@ function parseAddNodes(input) {
 		console.log(nodeName, rectangle);
 	}
 
+
+}
+
+function parseRemoveNodes(input) {
+
+	var circleLabel = input.split(",")[3].substring(1);
+	var circle = findCircleLabel(circleLabel);
+	var rectangle = findRectangleFromLabel(circle.id, rectangles);
+
+	var nodesArr = input.split(",");
+	for (var i = 4; i < nodesArr.length; i++){
+		//console.log(nodesArr[i]);
+		var rawNode = nodesArr[i];
+
+		var start = 1;
+		var finish = rawNode.indexOf("@");
+
+		if (i == 4){
+			start = 2;
+		}
+		var nodeName = rawNode.substring(start, finish);
+		var node = findNode(nodeName, nodes);
+		var nodeI = nodes.indexOf(node);
+		nodes.splice(nodeI, 1);
+		
+		removeNode(node);
+
+		console.log(nodeName, nodes, rectangle);
+	}
 
 }
