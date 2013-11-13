@@ -232,12 +232,13 @@ function zoneFinder(zoneStrings,circles) {
 
 		var nextZone = [];
 		for (var j = 0; j < zoneString.length; j++) {
-			var circleLabel = zoneString[j];
+			var circleId = zoneString[j];
 			//console.log(circleLabel);
-			if (circleLabel == "" || circleLabel == " "){
+			if (circleId == "" || circleId == " "){
 				continue;
 			}
-			var circle = circleWithLabel(circleLabel,circles);
+			//var circle = circleWithLabel(circleLabel,circles);
+			var circle = findCircleId(circleId,circles);
 
 			//console.log(circle);
 			if (circle != null) {
@@ -346,7 +347,7 @@ function findZoneRectangles(zoneStrings, circles) {
 		var rectangle = findZoneRectangle(circlesInZone,circlesOutZone);
 
 		for (var j = 0; j < circlesInZone.length; j++){
-			rectangle.label = rectangle.label + "" + circlesInZone[j].label;
+			rectangle.label = rectangle.label + "" + circlesInZone[j].id;
 		}
 
 		//console.log(circlesInZone, circlesOutZone, rectangle);
