@@ -1,4 +1,5 @@
 var svg;
+var duration = 1000;
 
 function drawGraph(nodes, edges, rectangles, circles){
 	$("#highLevel").show();
@@ -219,8 +220,6 @@ function drawEdges(edges){
 
 function moveCircle(id, newX, newY, newR) {
 
-	var duration = 1000;
-
 	var circleObj = findCircleId(id);
 	var circleSvg = d3.select("#circle"+id);
 
@@ -331,7 +330,11 @@ function addSGroup(id) {
 		.attr("id", function(d){
 			return "circle"+circle.id;
 		})
-		.attr("style","fill: none; stroke:blue;");
+		.attr("style","fill: none; stroke:blue;")
+		.style("opacity", 0)
+		.transition()
+		.style("opacity", 100)
+		.duration(duration);
 
 	svg.select("g")
 		.append("text")
@@ -347,7 +350,11 @@ function addSGroup(id) {
 		.attr("width", 20)
 		.attr("height", 20)
 		.attr("style", "font-weight:bold; font-size:1.5em; font-family:sans-serif;")
-		.attr("id","label"+circle.id);
+		.attr("id","label"+circle.id)
+		.style("opacity", 0)
+		.transition()
+		.style("opacity", 100)
+		.duration(duration);;
 
 	for (var i = 0; i < nodes.length; i++){
 		var node = nodes[i];
@@ -360,27 +367,81 @@ function addSGroup(id) {
 			//var nodeSvg = d3.select("#"+node.label);
 			//console.log(node.label, nodeSvg);
 
+			//add new node
+
 			if ($("#"+node.label).length == 0){
-				svg.append("circle")
-					.attr("r",5)
-					.attr("cx",node.x)
-					.attr("cy",node.y)
-					.attr("id", node.label)
-					.attr("class","node")
-					.style("fill", "blue");
+				addNode(node);
 			}
 		}
 	}
 }
 
-function deleteSGroup(input) {
+function deleteSGroup(id) {
+	console.log("deleting s group", id);
+
+	svg.select("#circle"+id)
+		.transition()
+		.style("opacity", 0)
+		.duration(duration)
+		.remove();
+
+	svg.select("#label"+id)
+		.transition()
+		.style("opacity", 0)
+		.duration(duration)
+		.remove();
+
+	//redraw all rectangles
+	drawRectangles(false);
 
 }
 
-function addNodes(input) {
+function addNode(node) {
+	svg.append("circle")
+		.attr("r",0)
+		.attr("cx",node.x)
+		.attr("cy",node.y)
+		.attr("id", node.label)
+		.attr("class","node")
+		.style("fill", "green")
+		.transition()
+		.attr("r", 5 * 4)
+		.duration(3*duration/4)
+		.transition()
+		.delay(3*duration/4)
+		.attr("r", 5)
+		.duration(duration/4)
+		.style("fill", "blue");
 
 }
 
-function removeNodes(input) {
+function removeNode(node) {
+	//console.log("removing node", node);
 
+	var nodeSvg = svg.select("#"+node.label);
+
+	nodeSvg.style("fill", "red")
+		.transition()
+		.attr("r", parseInt(nodeSvg.attr("r")) * 4)
+		.duration(3*duration/4);
+
+	nodeSvg.transition()
+		.delay(3*duration/4)
+		.attr("r", 0)
+		.duration(duration/4)
+		.remove();
+
+	//remove edges
+	for (var i = 0; i < edges.length; i++){
+		var edge = edges[i];
+		//if edge is connected to this node, remove edge
+		if (edge.source == node || edge.target == node) {
+			edges.splice(i, 1);
+			i--;
+			d3.select("#edge"+edge.source.label+edge.target.label)
+				.remove();
+		}
+	}
+
+	
 }
