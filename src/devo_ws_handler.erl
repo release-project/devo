@@ -18,7 +18,13 @@ init({tcp, http}, _Req, _Opts) ->
     {upgrade, protocol, cowboy_websocket}.
 
 websocket_init(_TransportName, Req, _Opts) ->
-    register(devo, self()),
+    case whereis(devo) of 
+        undefined ->
+            register(devo, self());
+        _ -> 
+            unregister(devo),
+            register(devo, self())
+    end,
     {ok, Req, #state{}}.
 
 websocket_handle({text, <<"stop">>}, Req, State) ->
