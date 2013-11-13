@@ -350,7 +350,7 @@ function parseInput(input){
 	} else if (input.split(",")[2] == "delete_s_group"){
 		parseDeleteSGroup(input)
 	} else if (input.split(",")[2] == "add_nodes"){
-		addNodes(input)
+		parseAddNodes(input)
 	} else if (input.split(",")[2] == "remove_nodes"){
 		removeNodes(input)
 	} else if (input.substring(0,20) == "{s_group_init_config"){
@@ -473,17 +473,18 @@ function parseDeleteSGroup(input){
 
 	var sGroupName = input.split(",")[3];
 	sGroupName = sGroupName.substring(1,sGroupName.length-3);
-
+	
 	//remove circle from list
-	var circle = findCircleId(sGroupName);
+	var circle = findCircleLabel(sGroupName);
 	var circleIndex = circles.indexOf(circle);
 	//console.log(circles[0], circles[1], circles[2], circleIndex, circle);
 	if (circleIndex != -1) {
 		circles.splice(circleIndex, 1);
 	}
 	//console.log(circles[0], circles[1], circles[2]);
+	console.log(sGroupName, circle.id);
 
-	var rectangle = findRectangleFromLabel(sGroupName, rectangles);
+	var rectangle = findRectangleFromLabel(circle.id, rectangles);
 
 	//console.log(rectangle);
 
@@ -502,15 +503,16 @@ function parseDeleteSGroup(input){
 			
 		} else {
 			//remove this region from node's regionText
-			var index = node.regionText.indexOf(sGroupName);
-			var newRegionText = node.regionText.substring(0,index) + node.regionText.substring(index+1,node.regionText.length);
+			var index = node.regionText.indexOf(circle.id);
+			//console.log(node.regionText, index, node.regionText.substring(0,index), node.regionText.substring(index+1));
+			var newRegionText = node.regionText.substring(0,index) + node.regionText.substring(index+1);
 			node.regionText = newRegionText;
 
 			//build zones, if this region isn't already there
 			if (zones.indexOf(newRegionText) == -1) {
 				zones.push(newRegionText);
 			}
-	//		console.log(node.regionText, newRegionText, zones);
+			console.log(node.regionText);
 		}
 
 	}
@@ -525,13 +527,46 @@ function parseDeleteSGroup(input){
 		node.region = findRectangleFromLabel(node.regionText, rectangles);
 	}
 	
-	deleteSGroup(sGroupName);
+	deleteSGroup(circle.id);
 
 	//remove svg of circle
 
-	console.log(sGroupName, zones, rectangles, circles);
+	console.log(sGroupName, circle.id, zones, rectangles, circles);
 
 	//{s_group, CurrentNode, delete_s_group, [Nodes]}
 
 //e.g. {s_group,'node1@127.0.0.1',delete_s_group,[aa]}.
+}
+
+function parseAddNodes(input) {
+
+//{s_group,'node1@127.0.0.1',add_nodes,[aa,['node3@127.0.0.1']]}.
+
+	var circleLabel = input.split(",")[3].substring(1);
+	var circle = findCircleLabel(circleLabel);
+	var rectangle = findRectangleFromLabel(circle.id, rectangles);
+
+	var nodesArr = input.split(",");
+	for (var i = 4; i < nodesArr.length; i++){
+		//console.log(nodesArr[i]);
+		var rawNode = nodesArr[i];
+
+		var start = 1;
+		var finish = rawNode.indexOf("@");
+
+		if (i == 4){
+			start = 2;
+		}
+		var nodeName = rawNode.substring(start, finish);
+		var node = new Node(nodeName, rectangle, circle.id);
+		nodes.push(node);
+		node.x = findNodeStartX(node, nodes.length, false);
+		node.y = findNodeStartY(node, nodes.length, false);
+		
+		addNode(node);
+
+		console.log(nodeName, rectangle);
+	}
+
+
 }

@@ -413,6 +413,8 @@ function addNode(node) {
 		.duration(duration/4)
 		.style("fill", "blue");
 
+
+
 }
 
 function removeNode(node) {
