@@ -131,7 +131,12 @@ function drawGraph(nodes, edges, rectangles, circles){
 			return d.label;
 		})
 		.attr("class","node")
-		.style("fill", "blue");
+
+		.style("fill", "blue")
+		.append("svg:title")
+        .text(function(d) {
+                return d.label;
+        });
 	
 }
 
@@ -411,7 +416,9 @@ function addNode(node) {
 		.delay(3*duration/4)
 		.attr("r", 5)
 		.duration(duration/4)
-		.style("fill", "blue");
+		.style("fill", "blue")
+		.append("svg:title")
+        .text(node.label);
 
 
 

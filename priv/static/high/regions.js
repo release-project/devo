@@ -13,6 +13,7 @@ var width = 800;
 var height = 600;
 var circleEnum = { TOPOLOGY: 1, ADD : 2, REMOVE : 3};
 var circleType = circleEnum.TOPOLOGY;
+var interval; //holds force tick
 
 
 var svg;
@@ -87,6 +88,14 @@ function Interaction(start, end, size){
 }
 
 
+function removeDuplicates(arr) {
+	var result = [];
+	$.each(arr, function(i, el){
+    	if($.inArray(el, result) === -1) result.push(el);
+	});
+	return result;
+}
+
 /*
 Finds a circle given a label
  */
@@ -109,6 +118,19 @@ function findCircleId(id){
 		}
 	}
 	return null;
+}
+
+/*
+Finds all circles given a id
+ */
+function findAllCirclesId(id){
+	var output = [];
+	for (var i = 0; i < circles.length; i++){
+		if (id == circles[i].id){
+			output.push(circles[i]);
+		}
+	}
+	return output;
 }
 
 /*
@@ -160,6 +182,20 @@ function generateHash(s){
 function next(){
 	iterateGraph(nodes, edges);
 }
+
+function startForce(){
+	interval = setInterval(
+		function() {
+			next();
+			console.log("force tick");
+		}
+	,500);
+}
+
+function stopForce() {
+	clearInterval(interval);
+}
+
 
 /*
 function animate(){
@@ -256,7 +292,7 @@ function parseComms(commsFile){
 }
 
 function parseCircles(input){
-
+	console.log(input);
 	var circleFile = input.split("\n");
 	//use 1 as first row of input are labels
 	for (var i = 1; i < circleFile.length-1; i++){
@@ -264,10 +300,23 @@ function parseCircles(input){
 		//console.log(result);
 
 		var c = findCircleId(result[0].trim());
-		c.r = parseInt(result[3]);
-		c.x = parseInt(result[1]);
-		c.y = parseInt(result[2]);
-		c.newCircle = false;
+		console.log(c);
+		if (c.newCircle){
+			c.r = parseInt(result[3]);
+			c.x = parseInt(result[1]);
+			c.y = parseInt(result[2]);
+			c.newCircle = false;
+		}
+		else {
+			console.log("duplicate needed");
+
+			var c2 = new Circle(result[0].trim(), c.label, parseInt(result[3]), parseInt(result[1]), parseInt(result[2]));
+			c2.newCircle = false;
+			circles.push(c2);
+
+		}
+
+		
 		//var c = new Circle(result[0].trim(), , parseInt(result[1]), parseInt(result[2]));
 		//circles.push(c);	
 	}
@@ -277,6 +326,8 @@ function parseCircles(input){
 	zones = eulerText.split(" ");
 	zones.pop();
 	console.log(zones);
+	zones = removeDuplicates(zones);
+
 	rectangles = findZoneRectangles(zones, circles);
 
 	for (var i = 0; i < nodes.length; i++) {
@@ -302,9 +353,10 @@ function parseHighTopology(input) {
 
 			var id = String.fromCharCode(circles.length + 65);
 			var c = new Circle(id, grpName, 0, 0, 0);
+			c.newCircle = true;
 			circles.push(c);
 
-			console.log(grpName, id, c);
+			//console.log(grpName, id, c);
 
 			for (var j = 1; j < grpDetails.length; j++){
 				var rawNodeName = grpDetails[j];
@@ -315,7 +367,7 @@ function parseHighTopology(input) {
 				var start = j==1 ? 2 : 1;
 				var nodeName = rawNodeName.substring(start,at);
 
-				console.log(nodeName);
+				//console.log(nodeName);
 
 				var nodeFound = findNode(nodeName, nodes);
 				if (nodeFound == null) {
@@ -323,7 +375,7 @@ function parseHighTopology(input) {
 					nodes.push(node);
 				} else {
 					nodeFound.regionText = nodeFound.regionText+id;
-					console.log("node found");
+				//	console.log("node found");
 				}
 			}
 
@@ -345,18 +397,25 @@ function parseHighTopology(input) {
 
 function parseInput(input){
 
+	stopForce();
+
 	if (input.split(",")[2] == "new_s_group"){
-		parseAddSGroup(input)
+		parseAddSGroup(input);
+		startForce();
 	} else if (input.split(",")[2] == "delete_s_group"){
-		parseDeleteSGroup(input)
+		parseDeleteSGroup(input);
+		startForce();
 	} else if (input.split(",")[2] == "add_nodes"){
-		parseAddNodes(input)
+		parseAddNodes(input);
+		startForce();
 	} else if (input.split(",")[2] == "remove_nodes"){
-		parseRemoveNodes(input)
+		parseRemoveNodes(input);
+		startForce();
 	} else if (input.substring(0,20) == "{s_group_init_config"){
 		parseHighTopology(input);
 	} else {
 		parseComms(input);
+		startForce();
 	}
 }
 
@@ -451,6 +510,7 @@ function parseAddSGroupResponse(input) {
 	zones = eulerText.split(" ");
 	zones.pop();
 	console.log(zones);
+	zones = removeDuplicates(zones);
 	rectangles = findZoneRectangles(zones, circles);
 
 	for (var i = 0; i < nodes.length; i++) {
@@ -518,6 +578,7 @@ function parseDeleteSGroup(input){
 	}
 	//console.log(zones, circles);
 	//rebuild rectangles
+	zones = removeDuplicates(zones);
 	rectangles = findZoneRectangles(zones, circles);
 	
 	//console.log (nodes);

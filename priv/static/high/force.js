@@ -132,6 +132,8 @@ function insideCircles(node){
 
 function iterateGraph(nodes, edges){
 
+	console.log(nodes, edges);
+
 	var K = 0.01; // attractive force multiplier
 	var R = 500.0; // repulsive force mutiplier
 	var C = 500.0; // circle force multiplier
