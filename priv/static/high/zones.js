@@ -342,6 +342,10 @@ function findZoneRectangles(zoneStrings, circles) {
 		
 		var circlesOutZone = getOutZones(circles, circlesInZone);
 
+		//TODO: insert check that removes duplicate circles from InZone
+		circlesOutZone = findAllIntersections (circlesInZone);
+		circlesInZone.removeAll(circlesOutZone); //check that this is a real JS function
+
 		//console.log(circlesInZone, circlesOutZone, rectangles, zones, zoneStrings, circles);
 
 		var rectangle = findZoneRectangle(circlesInZone,circlesOutZone);
@@ -355,3 +359,75 @@ function findZoneRectangles(zoneStrings, circles) {
 	}
 	return rectangles;
 }
+
+
+function findAllIntersections(circlesInZone)
+	for (var i = 0; i < circlesInZone.length; i++) {
+		var c1 = circlesInZone[i];
+		var count = circlesIntersect(c1, circlesInZone);
+		if (count.length == zone.length) {
+			//must intersect with every circle, therefore correct
+			return count;
+		}
+	}
+//returns list of circles that intersect == circlesInZone
+//circlesOutZone = all circles not contained within circlesInZone;
+}
+
+
+/*
+	given a circle and a list, finds all circles in list that circle intersects with
+*/
+function circlesIntersect(circle, circles) {
+	var output = [];
+	for (var i = 0; i < circles.length; i++) {
+		var c = circles[i];
+		if (twoCirclesIntersect(c, circle)) {
+			output.push(circle);
+		}
+	}
+	return output;
+}
+
+/*
+* Finds is two circles intersect
+*/
+function twoCirclesIntersect(c1, c2){
+	var distance = Math.sqrt( Math.pow(c1.x - c2.x, 2) + Math.pow(c1.y - c2.y,2) );
+	return (distance <= c1.r + c2.r);
+}
+
+/*
+
+function removeInvalidCircles(zoneString, circles) {
+	var circlesOut = [];
+
+	var circlesWithId = findAllCirclesId(id);
+
+
+	return circlesOut;
+}
+
+
+
+zone = abc  (a1 intersects b & c and another a2 does not)
+
+circlesOut = [];
+//circlesIn = [];
+
+for every circle with id a => c1 {
+
+	in = false;
+	
+	for every other circle (i.e. b & c) => c2 {
+		if c1 intersects c2 => in  = true
+		else in => false;
+	}
+	
+	if in == true {
+		//circlesIn = every other circle (b & c) + a1
+		circlesOut = every other a (i.e. a2)
+		break;
+	}
+}
+*/
