@@ -344,7 +344,7 @@ function findZoneRectangles(zoneStrings, circles) {
 
 		//TODO: insert check that removes duplicate circles from InZone
 		circlesOutZone = findAllIntersections (circlesInZone);
-		circlesInZone.removeAll(circlesOutZone); //check that this is a real JS function
+		circlesInZone = removeAll(circlesInZone, circlesOutZone); //check that this is a real JS function
 
 		//console.log(circlesInZone, circlesOutZone, rectangles, zones, zoneStrings, circles);
 
@@ -389,13 +389,7 @@ function circlesIntersect(circle, circles) {
 	return output;
 }
 
-/*
-* Finds is two circles intersect
-*/
-function twoCirclesIntersect(c1, c2){
-	var distance = Math.sqrt( Math.pow(c1.x - c2.x, 2) + Math.pow(c1.y - c2.y,2) );
-	return (distance <= c1.r + c2.r);
-}
+
 
 /*
 
