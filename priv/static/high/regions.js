@@ -183,6 +183,7 @@ function parseCircles(input){
 	zones.pop();
 	console.log(zones);
 	zones = removeDuplicates(zones);
+	console.log(zones);
 
 	rectangles = findZoneRectangles(zones, circles);
 
@@ -257,21 +258,21 @@ function parseInput(input){
 
 	if (input.split(",")[2] == "new_s_group"){
 		parseAddSGroup(input);
-		startForce();
+		//startForce();
 	} else if (input.split(",")[2] == "delete_s_group"){
 		parseDeleteSGroup(input);
-		startForce();
+		//startForce();
 	} else if (input.split(",")[2] == "add_nodes"){
 		parseAddNodes(input);
-		startForce();
+		//startForce();
 	} else if (input.split(",")[2] == "remove_nodes"){
 		parseRemoveNodes(input);
-		startForce();
+		//startForce();
 	} else if (input.substring(0,20) == "{s_group_init_config"){
 		parseHighTopology(input);
 	} else {
 		parseComms(input);
-		startForce();
+		//startForce();
 	}
 }
 
@@ -343,8 +344,9 @@ function parseAddSGroupResponse(input) {
 		var result = circleFile[i].split(",");
 		//console.log(result);
 
-		var c = findCircleId(result[0].trim());
-
+		var c = findCircleIdHaventMoved(result[0].trim(), circles);
+		console.log("moving circle", circles.indexOf(c));
+		console.log("before", c);
 		if (c == null) {
 
 		} else {
@@ -352,8 +354,9 @@ function parseAddSGroupResponse(input) {
 			c.r = parseInt(result[3]) * multiplier;
 			c.x = parseInt(result[1]) * multiplier;
 			c.y = parseInt(result[2]) * multiplier;
+			c.moved = true;
 		}
-		
+		console.log("after", c);
 		//var c = new Circle(result[0].trim(), , parseInt(result[1]), parseInt(result[2]));
 		
 			
@@ -362,6 +365,19 @@ function parseAddSGroupResponse(input) {
 	}
 
 	console.log(circles);
+
+	for (var j = 0; j < circles.length; j++){
+		var c = circles[j];
+		c.moved = false;
+		console.log("newcheck", j, c.newCircle);
+		if (c.newCircle){
+			c.newCircle = false;
+			addSGroup(c.id);
+		} else {
+			console.log("moving SVG circle", c, j, c.r, c.x, c.y);
+			moveCircle(c, c.x, c.y, c.r);
+		}
+	}
 
 	zones = eulerText.split(" ");
 	zones.pop();
@@ -372,16 +388,6 @@ function parseAddSGroupResponse(input) {
 	for (var i = 0; i < nodes.length; i++) {
 		var n = nodes[i];
 		n.region = findRectangleFromLabel(n.regionText, rectangles);
-	}
-
-	for (var i = 0; i < circles.length; i++){
-		var c = circles[i];
-		if (c.newCircle){
-			c.newCircle = false;
-			addSGroup(c.id);
-		} else {
-			moveCircle(c.id, c.x, c.y, c.r);
-		}
 	}
 }
 

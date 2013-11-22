@@ -7,6 +7,7 @@ function Circle(id,label,r,x,y) {
 	this.x = x;
 	this.y = y;
 	newCircle = false;
+	moved = false;
 }
 
 
@@ -99,6 +100,31 @@ function findAllCirclesId(id){
 }
 
 /*
+Finds all circles given a id
+ */
+function findAllCirclesId(id, list){
+	var output = [];
+	for (var i = 0; i < list.length; i++){
+		if (id == list[i].id){
+			output.push(list[i]);
+		}
+	}
+	return output;
+}
+
+/*
+Finds a circle with a given ID that hasn't moved
+ */
+function findCircleIdHaventMoved(id, list){
+	for (var i = 0; i < circles.length; i++){
+		if (id == circles[i].id && !circles[i].moved){
+			return circles[i];
+		}
+	}
+}
+
+
+/*
 Finds a rectangel given a label
 */
 function findRectangleFromLabel(label, rectangles){
@@ -149,6 +175,7 @@ function generateHash(s){
 */
 function twoCirclesIntersect(c1, c2){
 	var distance = Math.sqrt( Math.pow(c1.x - c2.x, 2) + Math.pow(c1.y - c2.y,2) );
+	//console.log("comparing", c1, c2, c1.r, c2.r, distance, distance <= c1.r + c2.r);
 	return (distance <= c1.r + c2.r);
 }
 
@@ -156,13 +183,15 @@ function twoCirclesIntersect(c1, c2){
 Removes from arr1 every element in arr2
 */
 function removeAll(arr1, arr2){
+	var result = [];
+	for (var i = 0; i < arr1.length; i++){
+		var index = arr2.indexOf(arr1[i]);
 
-	for (var i = 0; i < arr2.length; i++){
-		var index = arr1.indexOf(arr2[i]);
-		if (index != -1) {
-			arr1.splice(index, 1);
+		//if this element isn't in arr2, then add it to result
+		if (index == -1) {
+			result.push(arr1[i]);
 		}
 	}
-	return arr1;
+	return result;
 
 }

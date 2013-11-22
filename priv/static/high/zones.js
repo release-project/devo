@@ -37,7 +37,7 @@ function circlesLimit(circles) {
 	var minX = 0;
 	var minY = 0;
 	var maxX = 0;
-	var maxX = 0;
+	var maxY = 0;
 	for (var i = 0; i < circles.length; i++) {
 		if (circles[i] == undefined){
 			continue;
@@ -238,16 +238,23 @@ function zoneFinder(zoneStrings,circles) {
 				continue;
 			}
 			//var circle = circleWithLabel(circleLabel,circles);
-			var circle = findCircleId(circleId,circles);
+			//var circle = findCircleId(circleId,circles);
+			var circlesToAdd = findAllCirclesId(circleId, circles);
+			console.log(zoneString, circleId, circlesToAdd);
+
+			for (var k = 0; k < circlesToAdd.length; k++){
+				nextZone.push(circlesToAdd[k]);
+			}
 
 			//console.log(circle);
-			if (circle != null) {
-				nextZone.push(circle);
-			}
+			//if (circle != null) {
+			//	nextZone.push(circle);
+			//}
 		}
 		//console.log(nextZone);
 		ret.push(nextZone);
 	}
+	console.log(ret);
 	return ret;
 }
 
@@ -331,9 +338,9 @@ function findZoneRectangle(circlesInZone,circlesOutZone) {
   of all the circles in the diagram
 */
 function findZoneRectangles(zoneStrings, circles) {
-
+	//console.log("findZoneRectangles");
 	var zones = zoneFinder(zoneStrings,circles);
-
+	//console.log(zones);
 	var rectangles = [];
 	
 	// iterate through the zones, finding the best rectangle for each zone
@@ -342,14 +349,15 @@ function findZoneRectangles(zoneStrings, circles) {
 		
 		var circlesOutZone = getOutZones(circles, circlesInZone);
 
-		//TODO: insert check that removes duplicate circles from InZone
-		circlesOutZone = findAllIntersections (circlesInZone);
-		circlesInZone = removeAll(circlesInZone, circlesOutZone); //check that this is a real JS function
+		console.log(circlesInZone, circlesOutZone);
 
-		//console.log(circlesInZone, circlesOutZone, rectangles, zones, zoneStrings, circles);
+		//TODO: insert check that removes duplicate circles from InZone
+		circlesInZone = findAllIntersections(circlesInZone, zoneStrings[i]);
+		circlesOutZone = removeAll(circles, circlesInZone); //check that this is a real JS function
+
+		console.log(circlesInZone, circlesOutZone);
 
 		var rectangle = findZoneRectangle(circlesInZone,circlesOutZone);
-
 		for (var j = 0; j < circlesInZone.length; j++){
 			rectangle.label = rectangle.label + "" + circlesInZone[j].id;
 		}
@@ -361,15 +369,17 @@ function findZoneRectangles(zoneStrings, circles) {
 }
 
 
-function findAllIntersections(circlesInZone)
+function findAllIntersections(circlesInZone, zoneString) {
 	for (var i = 0; i < circlesInZone.length; i++) {
 		var c1 = circlesInZone[i];
 		var count = circlesIntersect(c1, circlesInZone);
-		if (count.length == zone.length) {
+		console.log(zoneString, c1, count, zoneString.length);
+		if (count.length == zoneString.length) {
 			//must intersect with every circle, therefore correct
 			return count;
 		}
 	}
+	return [];
 //returns list of circles that intersect == circlesInZone
 //circlesOutZone = all circles not contained within circlesInZone;
 }
@@ -383,7 +393,9 @@ function circlesIntersect(circle, circles) {
 	for (var i = 0; i < circles.length; i++) {
 		var c = circles[i];
 		if (twoCirclesIntersect(c, circle)) {
-			output.push(circle);
+			if (output.indexOf(c) == -1){
+				output.push(c);
+			}
 		}
 	}
 	return output;

@@ -223,9 +223,10 @@ function drawEdges(edges){
 		});
 }
 
-function moveCircle(id, newX, newY, newR) {
+function moveCircle(circleObj, newX, newY, newR) {
 
-	var circleObj = findCircleId(id);
+	//var circleObj = findCircleId(id);
+	var id = cir.id;
 	var circleSvg = d3.select("#circle"+id);
 
 	var origX = circleSvg.attr("cx");
