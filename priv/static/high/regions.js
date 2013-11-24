@@ -96,8 +96,8 @@ function parseComms(commsFile){
 	//for (var i = 0; i < 2; i++){
 	//	var timeInstance = input[i];
 
-		//var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
-		var interactions = timeInstance.split(",!");
+		var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
+		//var interactions = timeInstance.split(",!");
 		
 		var timeInt = "";
 		//if (i == 0) {
