@@ -8,6 +8,8 @@ function Circle(id,label,r,x,y) {
 	this.y = y;
 	newCircle = false;
 	moved = false;
+	svg = null;
+	labelSvg = null;
 }
 
 

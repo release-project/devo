@@ -366,19 +366,6 @@ function parseAddSGroupResponse(input) {
 
 	console.log(circles);
 
-	for (var j = 0; j < circles.length; j++){
-		var c = circles[j];
-		c.moved = false;
-		console.log("newcheck", j, c.newCircle);
-		if (c.newCircle){
-			c.newCircle = false;
-			addSGroup(c.id);
-		} else {
-			console.log("moving SVG circle", c, j, c.r, c.x, c.y);
-			moveCircle(c, c.x, c.y, c.r);
-		}
-	}
-
 	zones = eulerText.split(" ");
 	zones.pop();
 	console.log(zones);
@@ -389,6 +376,22 @@ function parseAddSGroupResponse(input) {
 		var n = nodes[i];
 		n.region = findRectangleFromLabel(n.regionText, rectangles);
 	}
+
+	for (var j = 0; j < circles.length; j++){
+		var c = circles[j];
+		c.moved = false;
+		console.log("newcheck", j, c.newCircle);
+		if (c.newCircle){
+			c.newCircle = false;
+			addSGroup(c);
+		} else {
+			console.log("moving SVG circle", c, j, c.r, c.x, c.y);
+			moveCircle(c, c.x, c.y, c.r);
+		}
+	}
+
+	
+
 }
 
 function parseDeleteSGroup(input){

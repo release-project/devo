@@ -43,15 +43,17 @@ function drawGraph(nodes, edges, rectangles, circles){
 			})
 			.attr("class","euler")
 			.attr("id", function(d){
+				circle.svg = d3.select(this);
 				return "circle"+circle.id;
 			})
 			.attr("style","fill: none; stroke:blue;");
 
-
+		//console.log(circle.svg.attr("cx"));
 
 		svg.select("g")
 			.append("text")
 			.text(function(){
+				circle.labelSvg = d3.select(this);
 				return circle.label;
 			})
 			.attr("x", function(){
@@ -143,11 +145,11 @@ function drawGraph(nodes, edges, rectangles, circles){
 function drawRectangles(multiplierSet){
 
 	d3.selectAll("rect").remove();
-
+	console.log(rectangles);
 	for (var i = 0; i < rectangles.length; i++) {
 	//context.fillRect(rectangles[i].x * multiplier, rectangles[i].y * multiplier, rectangles[i].width * multiplier, rectangles[i].height * multiplier);
-
-	svg.select("g")
+	//console.log(svg);
+	d3.select("svg").select("g")
 		.append("rect")
 		.attr("x", multiplierSet ? rectangles[i].x * multiplier : rectangles[i].x)
 	    .attr("y", multiplierSet ? rectangles[i].y * multiplier : rectangles[i].y)
@@ -226,8 +228,8 @@ function drawEdges(edges){
 function moveCircle(circleObj, newX, newY, newR) {
 
 	//var circleObj = findCircleId(id);
-	var id = cir.id;
-	var circleSvg = d3.select("#circle"+id);
+	var id = circleObj.id;
+	var circleSvg = circleObj.svg;//d3.select("#circle"+id);
 
 	var origX = circleSvg.attr("cx");
 	var origY = circleSvg.attr("cy");
@@ -245,8 +247,7 @@ function moveCircle(circleObj, newX, newY, newR) {
 	circleObj.r = newR;
 
 //move circle label
-	d3.select("#label"+circleObj.id)
-		.transition()
+	circleObj.labelSvg.transition()
 		.attr("x", function(){
 			return circleObj.x;
 		})
@@ -256,8 +257,9 @@ function moveCircle(circleObj, newX, newY, newR) {
 		.duration(duration);
 
 //redraw rectangles
-	rectangles = [];
-	rectangles = findZoneRectangles(zones, circles);
+	//rectangles = [];
+	//rectangles = findZoneRectangles(zones, circles);
+	console.log(rectangles);
 
 	for (var i = 0; i < nodes.length; i++) {
 		var n = nodes[i];
@@ -314,10 +316,12 @@ function moveCircle(circleObj, newX, newY, newR) {
 }
 
 //adds an sgroup to the drawing based on the circle id;
-function addSGroup(id) {
-	var circle = findCircleId(id);
+function addSGroup(circleObj) {
+	var circle = circleObj //findCircleId(id);
 	console.log(circle);
 
+	var svg = d3.select("svg");
+	
 	svg.select("g")
 		.append("circle")
 		.attr("r", function(){
@@ -334,6 +338,7 @@ function addSGroup(id) {
 		})
 		.attr("class","euler")
 		.attr("id", function(d){
+			circle.svg = d3.select(this);
 			return "circle"+circle.id;
 		})
 		.attr("style","fill: none; stroke:blue;")
@@ -345,6 +350,7 @@ function addSGroup(id) {
 	svg.select("g")
 		.append("text")
 		.text(function(){
+			circle.labelSvg = d3.select(this);
 			return circle.label;
 		})
 		.attr("x", function(){
@@ -365,7 +371,7 @@ function addSGroup(id) {
 	for (var i = 0; i < nodes.length; i++){
 		var node = nodes[i];
 		//console.log(node.regionText, id, )
-		if (node.regionText.indexOf(id) != -1){
+		if (node.regionText.indexOf(circle.id) != -1){
 			//move node
 			node.x = findNodeStartX(node, i, false);
 			node.y = findNodeStartY(node, i, false);
