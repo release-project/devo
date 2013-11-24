@@ -388,20 +388,27 @@ function addSGroup(circleObj) {
 	}
 }
 
-function deleteSGroup(id) {
-	console.log("deleting s group", id);
+function deleteSGroup(circle) {
+	console.log("deleting s group", circle.id);
 
-	svg.select("#circle"+id)
-		.transition()
-		.style("opacity", 0)
-		.duration(duration)
-		.remove();
+	//var circlesRemove = findAllCirclesId(id, circles);
+	//console.log(circlesRemove, id, circles);
+	//console.log(circlesRemove[0].svg, circlesRemove[0].labelSvg);
+	//for (var i = 0; i < circlesRemove.length; i++){
+		circle.svg
+			.transition()
+			.style("opacity", 0)
+			.duration(duration)
+			.remove();
 
-	svg.select("#label"+id)
-		.transition()
-		.style("opacity", 0)
-		.duration(duration)
-		.remove();
+		circle.labelSvg
+			.transition()
+			.style("opacity", 0)
+			.duration(duration)
+			.remove();
+
+	//}
+	
 
 	//redraw all rectangles
 	drawRectangles(false);

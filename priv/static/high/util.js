@@ -115,6 +115,19 @@ function findAllCirclesId(id, list){
 }
 
 /*
+Finds all circles given a label
+ */
+function findAllCirclesLabel(label, list){
+	var output = [];
+	for (var i = 0; i < list.length; i++){
+		if (label == list[i].label){
+			output.push(list[i]);
+		}
+	}
+	return output;
+}
+
+/*
 Finds a circle with a given ID that hasn't moved
  */
 function findCircleIdHaventMoved(id, list){
@@ -127,7 +140,7 @@ function findCircleIdHaventMoved(id, list){
 
 
 /*
-Finds a rectangel given a label
+Finds a rectangle given a label
 */
 function findRectangleFromLabel(label, rectangles){
 
@@ -136,6 +149,19 @@ function findRectangleFromLabel(label, rectangles){
 			return rectangles[i];
 		}
 	}
+}
+
+/*
+Finds all rectangles given a label
+*/
+function findAllRectanglesFromLabel(label, rectangles){
+	var output = [];
+	for (var i = 0; i < rectangles.length; i++){
+		if (label.trim() == rectangles[i].label.trim()){
+			output.push(rectangles[i]);
+		}
+	}
+	return output;
 }
 
 /*

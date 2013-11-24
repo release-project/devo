@@ -398,18 +398,23 @@ function parseDeleteSGroup(input){
 
 	var sGroupName = input.split(",")[3];
 	sGroupName = sGroupName.substring(1,sGroupName.length-3);
-	
+	//var removedCircles = [];
+	var id = "";
 	//remove circle from list
-	var circle = findCircleLabel(sGroupName);
-	var circleIndex = circles.indexOf(circle);
-	//console.log(circles[0], circles[1], circles[2], circleIndex, circle);
-	if (circleIndex != -1) {
-		circles.splice(circleIndex, 1);
+	var removedCircles = findAllCirclesLabel(sGroupName, circles);
+	for (var i = 0; i < removedCircles.length; i++) {
+		var circleIndex = circles.indexOf(removedCircles[i]);
+		id = removedCircles[i].id;
+		//console.log(circles[0], circles[1], circles[2], circleIndex, circle);
+		if (circleIndex != -1) {
+			circles.splice(circleIndex, 1);
+		}
+		//console.log(circles[0], circles[1], circles[2]);
+		console.log(sGroupName, removedCircles[i].id);
 	}
-	//console.log(circles[0], circles[1], circles[2]);
-	console.log(sGroupName, circle.id);
-
-	var rectangle = findRectangleFromLabel(circle.id, rectangles);
+	
+	console.log(id, rectangles);
+	var validRectangles = findAllRectanglesFromLabel(id, rectangles);
 
 	//console.log(rectangle);
 
@@ -417,24 +422,24 @@ function parseDeleteSGroup(input){
 	//remove this sgroup from nodes
 	for (var i = 0; i < nodes.length; i++){
 		var node = nodes[i];
-	//	console.log(i, node, node.label);
+		console.log(i, node, node.region, node.regionText);
 		//this node is only in deleted group, so remove node
-		if (node.region == rectangle) {
+		if (validRectangles.indexOf(node.region) != -1) {
 			//remove node
 			removeNode(node); //removes node from svg
 			nodes.splice(i, 1);
 			i--;
-	//		console.log(nodes);
+			console.log("removed node", node);
 			
 		} else {
 			//remove this region from node's regionText
-			var index = node.regionText.indexOf(circle.id);
+			var index = node.regionText.indexOf(id);
 			//console.log(node.regionText, index, node.regionText.substring(0,index), node.regionText.substring(index+1));
 			var newRegionText = node.regionText.substring(0,index) + node.regionText.substring(index+1);
 			node.regionText = newRegionText;
 
 			//build zones, if this region isn't already there
-			if (zones.indexOf(newRegionText) == -1) {
+			if (zones.indexOf(newRegionText) == -1 && newRegionText != "") {
 				zones.push(newRegionText);
 			}
 			console.log(node.regionText);
@@ -453,11 +458,13 @@ function parseDeleteSGroup(input){
 		node.region = findRectangleFromLabel(node.regionText, rectangles);
 	}
 	
-	deleteSGroup(circle.id);
+	for (var i = 0; i < removedCircles.length; i++){
+		deleteSGroup(removedCircles[i]);
+	}
 
 	//remove svg of circle
 
-	console.log(sGroupName, circle.id, zones, rectangles, circles);
+	console.log(sGroupName, zones, rectangles, removedCircles, circles);
 
 	//{s_group, CurrentNode, delete_s_group, [Nodes]}
 
