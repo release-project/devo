@@ -33,11 +33,18 @@ websocket_handle({text, <<"stop">>}, Req, State) ->
     stop_profiling(Cmd, Nodes),
     {shutdown, Req, State};
 websocket_handle({text, <<"start">>}, Req, State) ->
-    io:format("Profiling started ...\n"),
     {ok, Req, State};
 websocket_handle({text, Msg}, Req, State) ->
     MsgStr=binary_to_list(Msg),
     case string:tokens(MsgStr, ":") of 
+        ["start_profile","message_queue_len", NodeStr] ->
+            Nodes= string:tokens(NodeStr, ";"),
+            Ns = [list_to_atom(N)||N<-Nodes],
+            Cmd=message_queue_len,
+            %% Hardcoded process name, will be removed.
+            start_profiling(Cmd, {sd_orbit, Ns}),
+            NewState=State#state{cmd=Cmd, nodes=Ns},
+            {ok, Req, NewState};
         ["start_profile",Feature, NodeStr] ->
             Nodes= string:tokens(NodeStr, ";"),
             Ns = [list_to_atom(N)||N<-Nodes],
@@ -66,7 +73,7 @@ websocket_info({timeout, _Ref, _Msg}, Req, State) ->
                      lists:flatten(
                        io_lib:format("{~.3f,~p}.", 
                                      [Cnt*200/1000,Data]));
-                 false ->
+                 false -> 
                      lists:flatten(
                        io_lib:format("{~.3f,~p}.", 
                                      [Cnt*200/1000,
@@ -99,6 +106,9 @@ websocket_info(_Info={run_queues_info, Ts, Rqs}, Req, State) ->
     Str=lists:flatten([" "++integer_to_list(Len)++" "
                        ||Len<-tuple_to_list(Rqs)]),
     InfoStr=lists:flatten(io_lib:format("~p ~s", [Ts, Str])),
+    {reply, {text, list_to_binary(InfoStr)}, Req, State};
+websocket_info(_Info={message_queue_len_info, Ts, Len}, Req, State) ->
+    InfoStr=lists:flatten(io_lib:format("~p ~p", [Ts, Len])),
     {reply, {text, list_to_binary(InfoStr)}, Req, State};
 websocket_info(Info={s_group, _Node, _Fun, _Args}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
@@ -168,6 +178,16 @@ start_profiling(rq_migration, [Node|_]) ->
                     devo_trace:start_trace(migration, Node, {devo, node()})
             end
     end;
+start_profiling(message_queue_len, {RegName, [Node|_]}) ->
+  %%  erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+    Res=rpc:call(Node, devo_sampling, start,
+                 [[{message_queue_len, RegName}], infinity, none,{devo, node()}]),
+    case Res of 
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        _ -> Res
+    end;
 start_profiling(inter_node, Nodes=[N|_Ns]) ->
     case get_init_s_group_config(N) of 
         {badrpc, Reason} ->
@@ -208,6 +228,16 @@ stop_profiling(rq, [Node|_]) ->
         _ -> 
            Res
     end;
+stop_profiling(message_queue_len, [Node|_]) ->
+    Res=rpc:call(Node, devo_sampling, stop,[]),
+    case Res of 
+        {badrpc, Reason} ->
+            io:format("Devo failed to stop profiling for reason:\n~p\n",
+                      [Reason]);
+        _ -> 
+           Res
+    end;
+
 stop_profiling(migration, [_Node|_]) ->
     devo_trace:stop_trace();
 stop_profiling(rq_migration, [Node|_]) ->
