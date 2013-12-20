@@ -80,13 +80,14 @@
                     disconnect();}
                else 
                 {
+				start_profile(input);
                   //start();
                   if (high) {
                     $("#highLevel").show();
                   } else {
                     $("#lowLevel").show();
                   }
-                 start_profile(input);
+                 
                  profile_on=1;
                 }
       } else {
