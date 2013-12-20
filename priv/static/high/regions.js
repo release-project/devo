@@ -13,6 +13,7 @@ var width = 800;
 var height = 600;
 var circleEnum = { TOPOLOGY: 1, ADD : 2, REMOVE : 3};
 var circleType = circleEnum.TOPOLOGY;
+var interval; //holds force tick
 
 
 var svg;
@@ -33,133 +34,24 @@ conn.onmessage = function(e) {
     
 };
 
-/** A labelled circle */
-function Circle(id,label,r,x,y) {
-	this.id = id;
-	this.label = label;
-	this.r = r;
-	this.x = x;
-	this.y = y;
-	newCircle = false;
-}
-
-
-function Rectangle(x,y,width,height) {
-	this.x = x;
-	this.y = y;
-	this.width = width;
-	this.height = height;
-	this.label = "";
-}
-
-function Point(x,y) {
-	this.x = x;
-	this.y = y;
-}
-
-
-function Node(label,region, regionText){
-	this.label = label;
-	x = 0.0;
-	y = 0.0;
-	this.region = region; //rectangle
-	this.regionText = regionText;
-	horizontal = 0;
-	vertical = 0;
-}
-
-function Edge(source, target, size){
-	this.source = source;
-	this.target = target;
-	this.size = size;
-}
-
-
-function Time(time){
-	this.time = time;
-	this.interactions = [];
-}
-
-function Interaction(start, end, size){
-	this.start = start;
-	this.end = end;
-	this.size = size;
-}
-
-
-/*
-Finds a circle given a label
- */
-function findCircleLabel(label){
-	for (var i = 0; i < circles.length; i++){
-		if (label == circles[i].label){
-			return circles[i];
-		}
-	}
-	return null;
-}
-
-/*
-Finds a circle given a id
- */
-function findCircleId(id){
-	for (var i = 0; i < circles.length; i++){
-		if (id == circles[i].id){
-			return circles[i];
-		}
-	}
-	return null;
-}
-
-/*
-Finds a rectangel given a label
-*/
-function findRectangleFromLabel(label, rectangles){
-
-	for (var i = 0; i < rectangles.length; i++){
-		if (label.trim() == rectangles[i].label.trim()){
-			return rectangles[i];
-		}
-	}
-}
-
-/*
-Finds a node given a label
-*/
-function findNode(label, nodes){
-	for (var i = 0; i < nodes.length; i++){
-		//console.log(nodes[i].label,label, nodes[i].label == label);
-		if (nodes[i].label == label) {
-			return nodes[i];
-		}
-	} 
-	return null;
-}
-
-function stringCompare(s1, s2){
-	console.log(s1.length,s2.length, s1.charAt(1));
-	if (s1.length != s2.length){
-		return false;
-	}
-	for (var i = 0; i < s1.length; i++){
-		//console.log(s1.charAt(i),s2.charAt(i));
-		if (s1.charAt(i) != s2.charAt(i)){
-			return false;
-		}
-	}
-	return true;
-
-}
-
-// Generates a hash for creating unqiue circle or node IDs
-//not used
-function generateHash(s){
-	return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);              
-}
 
 function next(){
 	iterateGraph(nodes, edges);
 }
+
+function startForce(){
+	interval = setInterval(
+		function() {
+			next();
+			console.log("force tick");
+		}
+	,500);
+}
+
+function stopForce() {
+	clearInterval(interval);
+}
+
 
 /*
 function animate(){
@@ -204,8 +96,8 @@ function parseComms(commsFile){
 	//for (var i = 0; i < 2; i++){
 	//	var timeInstance = input[i];
 
-		//var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
-		var interactions = timeInstance.split(",!");
+		var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
+		//var interactions = timeInstance.split(",!");
 		
 		var timeInt = "";
 		//if (i == 0) {
@@ -256,7 +148,7 @@ function parseComms(commsFile){
 }
 
 function parseCircles(input){
-
+	console.log(input);
 	var circleFile = input.split("\n");
 	//use 1 as first row of input are labels
 	for (var i = 1; i < circleFile.length-1; i++){
@@ -264,10 +156,23 @@ function parseCircles(input){
 		//console.log(result);
 
 		var c = findCircleId(result[0].trim());
-		c.r = parseInt(result[3]);
-		c.x = parseInt(result[1]);
-		c.y = parseInt(result[2]);
-		c.newCircle = false;
+		console.log(c);
+		if (c.newCircle){
+			c.r = parseInt(result[3]);
+			c.x = parseInt(result[1]);
+			c.y = parseInt(result[2]);
+			c.newCircle = false;
+		}
+		else {
+			console.log("duplicate needed");
+
+			var c2 = new Circle(result[0].trim(), c.label, parseInt(result[3]), parseInt(result[1]), parseInt(result[2]));
+			c2.newCircle = false;
+			circles.push(c2);
+
+		}
+
+		
 		//var c = new Circle(result[0].trim(), , parseInt(result[1]), parseInt(result[2]));
 		//circles.push(c);	
 	}
@@ -277,6 +182,9 @@ function parseCircles(input){
 	zones = eulerText.split(" ");
 	zones.pop();
 	console.log(zones);
+	zones = removeDuplicates(zones);
+	console.log(zones);
+
 	rectangles = findZoneRectangles(zones, circles);
 
 	for (var i = 0; i < nodes.length; i++) {
@@ -302,9 +210,10 @@ function parseHighTopology(input) {
 
 			var id = String.fromCharCode(circles.length + 65);
 			var c = new Circle(id, grpName, 0, 0, 0);
+			c.newCircle = true;
 			circles.push(c);
 
-			console.log(grpName, id, c);
+			//console.log(grpName, id, c);
 
 			for (var j = 1; j < grpDetails.length; j++){
 				var rawNodeName = grpDetails[j];
@@ -315,7 +224,7 @@ function parseHighTopology(input) {
 				var start = j==1 ? 2 : 1;
 				var nodeName = rawNodeName.substring(start,at);
 
-				console.log(nodeName);
+				//console.log(nodeName);
 
 				var nodeFound = findNode(nodeName, nodes);
 				if (nodeFound == null) {
@@ -323,7 +232,7 @@ function parseHighTopology(input) {
 					nodes.push(node);
 				} else {
 					nodeFound.regionText = nodeFound.regionText+id;
-					console.log("node found");
+				//	console.log("node found");
 				}
 			}
 
@@ -345,18 +254,25 @@ function parseHighTopology(input) {
 
 function parseInput(input){
 
+	stopForce();
+
 	if (input.split(",")[2] == "new_s_group"){
-		parseAddSGroup(input)
+		parseAddSGroup(input);
+		//startForce();
 	} else if (input.split(",")[2] == "delete_s_group"){
-		deleteSGroup(input)
+		parseDeleteSGroup(input);
+		//startForce();
 	} else if (input.split(",")[2] == "add_nodes"){
-		addNodes(input)
+		parseAddNodes(input);
+		//startForce();
 	} else if (input.split(",")[2] == "remove_nodes"){
-		removeNodes(input)
+		parseRemoveNodes(input);
+		//startForce();
 	} else if (input.substring(0,20) == "{s_group_init_config"){
 		parseHighTopology(input);
 	} else {
 		parseComms(input);
+		//startForce();
 	}
 }
 
@@ -428,8 +344,9 @@ function parseAddSGroupResponse(input) {
 		var result = circleFile[i].split(",");
 		//console.log(result);
 
-		var c = findCircleId(result[0].trim());
-
+		var c = findCircleIdHaventMoved(result[0].trim(), circles);
+		console.log("moving circle", circles.indexOf(c));
+		console.log("before", c);
 		if (c == null) {
 
 		} else {
@@ -437,8 +354,9 @@ function parseAddSGroupResponse(input) {
 			c.r = parseInt(result[3]) * multiplier;
 			c.x = parseInt(result[1]) * multiplier;
 			c.y = parseInt(result[2]) * multiplier;
+			c.moved = true;
 		}
-		
+		console.log("after", c);
 		//var c = new Circle(result[0].trim(), , parseInt(result[1]), parseInt(result[2]));
 		
 			
@@ -451,6 +369,7 @@ function parseAddSGroupResponse(input) {
 	zones = eulerText.split(" ");
 	zones.pop();
 	console.log(zones);
+	zones = removeDuplicates(zones);
 	rectangles = findZoneRectangles(zones, circles);
 
 	for (var i = 0; i < nodes.length; i++) {
@@ -458,13 +377,158 @@ function parseAddSGroupResponse(input) {
 		n.region = findRectangleFromLabel(n.regionText, rectangles);
 	}
 
-	for (var i = 0; i < circles.length; i++){
-		var c = circles[i];
+	for (var j = 0; j < circles.length; j++){
+		var c = circles[j];
+		c.moved = false;
+		console.log("newcheck", j, c.newCircle);
 		if (c.newCircle){
 			c.newCircle = false;
-			addSGroup(c.id);
+			addSGroup(c);
 		} else {
-			moveCircle(c.id, c.x, c.y, c.r);
+			console.log("moving SVG circle", c, j, c.r, c.x, c.y);
+			moveCircle(c, c.x, c.y, c.r);
 		}
 	}
+
+	
+
+}
+
+function parseDeleteSGroup(input){
+
+	var sGroupName = input.split(",")[3];
+	sGroupName = sGroupName.substring(1,sGroupName.length-3);
+	//var removedCircles = [];
+	var id = "";
+	//remove circle from list
+	var removedCircles = findAllCirclesLabel(sGroupName, circles);
+	for (var i = 0; i < removedCircles.length; i++) {
+		var circleIndex = circles.indexOf(removedCircles[i]);
+		id = removedCircles[i].id;
+		//console.log(circles[0], circles[1], circles[2], circleIndex, circle);
+		if (circleIndex != -1) {
+			circles.splice(circleIndex, 1);
+		}
+		//console.log(circles[0], circles[1], circles[2]);
+		console.log(sGroupName, removedCircles[i].id);
+	}
+	
+	console.log(id, rectangles);
+	var validRectangles = findAllRectanglesFromLabel(id, rectangles);
+
+	//console.log(rectangle);
+
+	zones = [];
+	//remove this sgroup from nodes
+	for (var i = 0; i < nodes.length; i++){
+		var node = nodes[i];
+		console.log(i, node, node.region, node.regionText);
+		//this node is only in deleted group, so remove node
+		if (validRectangles.indexOf(node.region) != -1) {
+			//remove node
+			removeNode(node); //removes node from svg
+			nodes.splice(i, 1);
+			i--;
+			console.log("removed node", node);
+			
+		} else {
+			//remove this region from node's regionText
+			var index = node.regionText.indexOf(id);
+			//console.log(node.regionText, index, node.regionText.substring(0,index), node.regionText.substring(index+1));
+			var newRegionText = node.regionText.substring(0,index) + node.regionText.substring(index+1);
+			node.regionText = newRegionText;
+
+			//build zones, if this region isn't already there
+			if (zones.indexOf(newRegionText) == -1 && newRegionText != "") {
+				zones.push(newRegionText);
+			}
+			console.log(node.regionText);
+		}
+
+	}
+	//console.log(zones, circles);
+	//rebuild rectangles
+	zones = removeDuplicates(zones);
+	rectangles = findZoneRectangles(zones, circles);
+	
+	//console.log (nodes);
+	//assign node correct new region
+	for (var i = 0; i < nodes.length; i++){
+		var node = nodes[i];
+		node.region = findRectangleFromLabel(node.regionText, rectangles);
+	}
+	
+	for (var i = 0; i < removedCircles.length; i++){
+		deleteSGroup(removedCircles[i]);
+	}
+
+	//remove svg of circle
+
+	console.log(sGroupName, zones, rectangles, removedCircles, circles);
+
+	//{s_group, CurrentNode, delete_s_group, [Nodes]}
+
+//e.g. {s_group,'node1@127.0.0.1',delete_s_group,[aa]}.
+}
+
+function parseAddNodes(input) {
+
+//{s_group,'node1@127.0.0.1',add_nodes,[aa,['node3@127.0.0.1']]}.
+
+	var circleLabel = input.split(",")[3].substring(1);
+	var circle = findCircleLabel(circleLabel);
+	var rectangle = findRectangleFromLabel(circle.id, rectangles);
+
+	var nodesArr = input.split(",");
+	for (var i = 4; i < nodesArr.length; i++){
+		//console.log(nodesArr[i]);
+		var rawNode = nodesArr[i];
+
+		var start = 1;
+		var finish = rawNode.indexOf("@");
+
+		if (i == 4){
+			start = 2;
+		}
+		var nodeName = rawNode.substring(start, finish);
+		var node = new Node(nodeName, rectangle, circle.id);
+		nodes.push(node);
+		node.x = findNodeStartX(node, nodes.length, false);
+		node.y = findNodeStartY(node, nodes.length, false);
+		
+		addNode(node);
+
+		console.log(nodeName, rectangle);
+	}
+
+
+}
+
+function parseRemoveNodes(input) {
+
+	var circleLabel = input.split(",")[3].substring(1);
+	var circle = findCircleLabel(circleLabel);
+	var rectangle = findRectangleFromLabel(circle.id, rectangles);
+
+	var nodesArr = input.split(",");
+	for (var i = 4; i < nodesArr.length; i++){
+		//console.log(nodesArr[i]);
+		var rawNode = nodesArr[i];
+
+		var start = 1;
+		var finish = rawNode.indexOf("@");
+
+		if (i == 4){
+			start = 2;
+		}
+		var nodeName = rawNode.substring(start, finish);
+		var node = findNode(nodeName, nodes);
+		var nodeI = nodes.indexOf(node);
+		nodes.splice(nodeI, 1);
+		
+		removeNode(node);
+
+		console.log(nodeName, nodes, rectangle);
+	}
+
 }

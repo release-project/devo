@@ -1,4 +1,5 @@
 var svg;
+var duration = 1000;
 
 function drawGraph(nodes, edges, rectangles, circles){
 	$("#highLevel").show();
@@ -42,15 +43,17 @@ function drawGraph(nodes, edges, rectangles, circles){
 			})
 			.attr("class","euler")
 			.attr("id", function(d){
+				circle.svg = d3.select(this);
 				return "circle"+circle.id;
 			})
 			.attr("style","fill: none; stroke:blue;");
 
-
+		//console.log(circle.svg.attr("cx"));
 
 		svg.select("g")
 			.append("text")
 			.text(function(){
+				circle.labelSvg = d3.select(this);
 				return circle.label;
 			})
 			.attr("x", function(){
@@ -130,18 +133,23 @@ function drawGraph(nodes, edges, rectangles, circles){
 			return d.label;
 		})
 		.attr("class","node")
-		.style("fill", "blue");
+
+		.style("fill", "blue")
+		.append("svg:title")
+        .text(function(d) {
+                return d.label;
+        });
 	
 }
 
 function drawRectangles(multiplierSet){
 
 	d3.selectAll("rect").remove();
-
+	console.log(rectangles);
 	for (var i = 0; i < rectangles.length; i++) {
 	//context.fillRect(rectangles[i].x * multiplier, rectangles[i].y * multiplier, rectangles[i].width * multiplier, rectangles[i].height * multiplier);
-
-	svg.select("g")
+	//console.log(svg);
+	d3.select("svg").select("g")
 		.append("rect")
 		.attr("x", multiplierSet ? rectangles[i].x * multiplier : rectangles[i].x)
 	    .attr("y", multiplierSet ? rectangles[i].y * multiplier : rectangles[i].y)
@@ -217,12 +225,11 @@ function drawEdges(edges){
 		});
 }
 
-function moveCircle(id, newX, newY, newR) {
+function moveCircle(circleObj, newX, newY, newR) {
 
-	var duration = 1000;
-
-	var circleObj = findCircleId(id);
-	var circleSvg = d3.select("#circle"+id);
+	//var circleObj = findCircleId(id);
+	var id = circleObj.id;
+	var circleSvg = circleObj.svg;//d3.select("#circle"+id);
 
 	var origX = circleSvg.attr("cx");
 	var origY = circleSvg.attr("cy");
@@ -240,8 +247,7 @@ function moveCircle(id, newX, newY, newR) {
 	circleObj.r = newR;
 
 //move circle label
-	d3.select("#label"+circleObj.id)
-		.transition()
+	circleObj.labelSvg.transition()
 		.attr("x", function(){
 			return circleObj.x;
 		})
@@ -251,8 +257,9 @@ function moveCircle(id, newX, newY, newR) {
 		.duration(duration);
 
 //redraw rectangles
-	rectangles = [];
-	rectangles = findZoneRectangles(zones, circles);
+	//rectangles = [];
+	//rectangles = findZoneRectangles(zones, circles);
+	console.log(rectangles);
 
 	for (var i = 0; i < nodes.length; i++) {
 		var n = nodes[i];
@@ -309,10 +316,12 @@ function moveCircle(id, newX, newY, newR) {
 }
 
 //adds an sgroup to the drawing based on the circle id;
-function addSGroup(id) {
-	var circle = findCircleId(id);
+function addSGroup(circleObj) {
+	var circle = circleObj //findCircleId(id);
 	console.log(circle);
 
+	var svg = d3.select("svg");
+	
 	svg.select("g")
 		.append("circle")
 		.attr("r", function(){
@@ -329,13 +338,19 @@ function addSGroup(id) {
 		})
 		.attr("class","euler")
 		.attr("id", function(d){
+			circle.svg = d3.select(this);
 			return "circle"+circle.id;
 		})
-		.attr("style","fill: none; stroke:blue;");
+		.attr("style","fill: none; stroke:blue;")
+		.style("opacity", 0)
+		.transition()
+		.style("opacity", 100)
+		.duration(duration);
 
 	svg.select("g")
 		.append("text")
 		.text(function(){
+			circle.labelSvg = d3.select(this);
 			return circle.label;
 		})
 		.attr("x", function(){
@@ -347,12 +362,16 @@ function addSGroup(id) {
 		.attr("width", 20)
 		.attr("height", 20)
 		.attr("style", "font-weight:bold; font-size:1.5em; font-family:sans-serif;")
-		.attr("id","label"+circle.id);
+		.attr("id","label"+circle.id)
+		.style("opacity", 0)
+		.transition()
+		.style("opacity", 100)
+		.duration(duration);;
 
 	for (var i = 0; i < nodes.length; i++){
 		var node = nodes[i];
 		//console.log(node.regionText, id, )
-		if (node.regionText.indexOf(id) != -1){
+		if (node.regionText.indexOf(circle.id) != -1){
 			//move node
 			node.x = findNodeStartX(node, i, false);
 			node.y = findNodeStartY(node, i, false);
@@ -360,27 +379,92 @@ function addSGroup(id) {
 			//var nodeSvg = d3.select("#"+node.label);
 			//console.log(node.label, nodeSvg);
 
+			//add new node
+
 			if ($("#"+node.label).length == 0){
-				svg.append("circle")
-					.attr("r",5)
-					.attr("cx",node.x)
-					.attr("cy",node.y)
-					.attr("id", node.label)
-					.attr("class","node")
-					.style("fill", "blue");
+				addNode(node);
 			}
 		}
 	}
 }
 
-function deleteSGroup(input) {
+function deleteSGroup(circle) {
+	console.log("deleting s group", circle.id);
+
+	//var circlesRemove = findAllCirclesId(id, circles);
+	//console.log(circlesRemove, id, circles);
+	//console.log(circlesRemove[0].svg, circlesRemove[0].labelSvg);
+	//for (var i = 0; i < circlesRemove.length; i++){
+		circle.svg
+			.transition()
+			.style("opacity", 0)
+			.duration(duration)
+			.remove();
+
+		circle.labelSvg
+			.transition()
+			.style("opacity", 0)
+			.duration(duration)
+			.remove();
+
+	//}
+	
+
+	//redraw all rectangles
+	drawRectangles(false);
 
 }
 
-function addNodes(input) {
+function addNode(node) {
+	svg.append("circle")
+		.attr("r",0)
+		.attr("cx",node.x)
+		.attr("cy",node.y)
+		.attr("id", node.label)
+		.attr("class","node")
+		.style("fill", "green")
+		.transition()
+		.attr("r", 5 * 4)
+		.duration(3*duration/4)
+		.transition()
+		.delay(3*duration/4)
+		.attr("r", 5)
+		.duration(duration/4)
+		.style("fill", "blue")
+		.append("svg:title")
+        .text(node.label);
+
+
 
 }
 
-function removeNodes(input) {
+function removeNode(node) {
+	//console.log("removing node", node);
 
+	var nodeSvg = svg.select("#"+node.label);
+
+	nodeSvg.style("fill", "red")
+		.transition()
+		.attr("r", parseInt(nodeSvg.attr("r")) * 4)
+		.duration(3*duration/4);
+
+	nodeSvg.transition()
+		.delay(3*duration/4)
+		.attr("r", 0)
+		.duration(duration/4)
+		.remove();
+
+	//remove edges
+	for (var i = 0; i < edges.length; i++){
+		var edge = edges[i];
+		//if edge is connected to this node, remove edge
+		if (edge.source == node || edge.target == node) {
+			edges.splice(i, 1);
+			i--;
+			d3.select("#edge"+edge.source.label+edge.target.label)
+				.remove();
+		}
+	}
+
+	
 }
