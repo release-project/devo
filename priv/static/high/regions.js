@@ -281,7 +281,7 @@ function parseAddSGroup(input) {
 
 	var grpDetails = input.split(",");
 
-	var sgroupName = grpDetails[3].substring(2);
+	var sgroupName = grpDetails[3].substring(1);
 	console.log(sgroupName, grpDetails);
 
 	var id = String.fromCharCode(circles.length + 65);
@@ -295,7 +295,7 @@ function parseAddSGroup(input) {
 		var rawName = grpDetails[j];
 		var at = rawName.indexOf("@");
 		
-		var start = j == 4 ? 3 : 1
+		var start = j == 4 ? 2 : 1
 		var nodeName = rawName.substring(start, at);
 
 		var node = findNode(nodeName, nodes);
@@ -525,6 +525,8 @@ function parseRemoveNodes(input) {
 		var node = findNode(nodeName, nodes);
 		var nodeI = nodes.indexOf(node);
 		nodes.splice(nodeI, 1);
+
+		console.log(nodeName, node);
 		
 		removeNode(node);
 
