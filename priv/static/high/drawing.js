@@ -195,6 +195,8 @@ function findNodeStartY(d, i, multiplierSet){
 }
 
 function drawEdges(edges){
+	var svg = d3.select("svg");
+
 	svg.selectAll("line").remove();
 
 	svg.selectAll("line")
