@@ -134,9 +134,11 @@ function parseComms(commsFile){
 			var finishNode = findNode(finish, nodes);
 			//console.log(startNode, start, nodes);
 			var edge = new Edge(startNode, finishNode, count);
-
+			
+			
 			time.interactions.push( edge );
 
+			console.log(start, startNode, finish, finishNode, count);
 			//console.log(start, finish, count);
 		}
 		edges = time.interactions;
