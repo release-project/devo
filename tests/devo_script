@@ -1,0 +1,56 @@
+
+
+step1: update devo.
+
+cd devo
+git pull
+make
+
+cd tests
+erlc *.erl
+
+
+step2. start the five worker nodes. (need five terminal emulators)
+
+cd tests
+./start.sh node1@127.0.0.1
+
+cd tests
+./start.sh node2@127.0.0.1
+
+cd tests
+./start.sh node3@127.0.0.1
+
+cd tests
+./start.sh node4@127.0.0.1
+
+cd tests
+./start.sh node5@127.0.0.1
+
+
+We'll run the test code on node1, leave all the other nodes there.
+
+
+step3: start devo node on another window.
+
+cd devo
+
+./start.sh
+
+goto localhost:8080
+
+
+step4: run the visualisation.
+
+For the first three options, only one node can be monitored a time.
+
+1) add node1@127.0.0.1
+2) select one of the first three options.
+3) click node1@127.0.1 in the node list to highlight it. 
+4) click start/stop visualisation.
+
+now go to node1@127.0.0.1 and type
+
+orbit:run()
+
+you should be able to see the digram.
