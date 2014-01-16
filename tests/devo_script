@@ -10,26 +10,10 @@ cd tests
 erlc *.erl
 
 
-step2. start the five worker nodes. (need five terminal emulators)
+step2. start a worker nodes on another terminal
 
 cd tests
 ./start.sh node1@127.0.0.1
-
-cd tests
-./start.sh node2@127.0.0.1
-
-cd tests
-./start.sh node3@127.0.0.1
-
-cd tests
-./start.sh node4@127.0.0.1
-
-cd tests
-./start.sh node5@127.0.0.1
-
-
-We'll run the test code on node1, leave all the other nodes there.
-
 
 step3: start devo node on another window.
 
@@ -51,6 +35,31 @@ For the first three options, only one node can be monitored a time.
 
 now go to node1@127.0.0.1 and type
 
-orbit:run()
+orbit:run_on_one_node().
 
 you should be able to see the digram.
+
+
+=======to run orbit on 5 nodes===== 
+
+open another four terminals.
+
+cd tests
+./start.sh node2@127.0.0.1
+
+cd tests
+./start.sh node3@127.0.0.1
+
+
+cd tests
+./start.sh node4@127.0.0.1
+
+
+cd tests
+./start.sh node4@127.0.0.1
+
+
+goto node1@127.0.0.1, and type
+
+orbit:run_on_multi_nodes().
+
