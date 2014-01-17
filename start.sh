@@ -1,5 +1,4 @@
 #!/bin/sh
-erl -pa ebin deps/*/ebin -s devo \
-    -eval "io:format(\"Point your browser at http://localhost:8080/ to use a simple websocket client~n\")."
+erl -name devo@127.0.0.1  -setcookie "secret" -pa ../devo/ebin deps/*/ebin -s devo 
 
  
