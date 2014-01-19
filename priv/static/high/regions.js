@@ -19,7 +19,7 @@ var interval; //holds force tick
 var svg;
 var times = [];
 
-var conn = new WebSocket('ws://localhost:8081');
+var conn = new WebSocket('ws://greedy.softlab.ntua.gr:8081');
 //var conn = new WebSocket('ws://cs.kent.ac.uk/~rb440/:8081');
 conn.onopen = function(e) {
     console.log("Connection established!");

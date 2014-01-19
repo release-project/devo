@@ -98,6 +98,15 @@
               };
       };
 
+      function findMechanismSelection(mechanism){
+            var mechanisms = document.getElementsByName(mechanism);
+            for (i = 0; i < mechanisms.length; i++) {
+                  if (mechanisms[i].checked==true) {
+                        return mechanisms[i].value;
+                  }
+            }
+      }
+
       function findFeatureSelection(feature){
       var test = document.getElementsByName(feature);
       var sizes = test.length;
@@ -164,9 +173,10 @@
 
       function start_profile(input)
       {
+         var mechanismS = findMechanismSelection("mechanism"); 
          var featureS =  findFeatureSelection("feature");
          var nodeS = findNodeSelection();
-         var txt = 'start_profile:'+featureS+':'+ nodeS;
+         var txt = 'start_profile:' + featureS + ':' + nodeS + ':' + mechanismS;
          if (nodeS=="")
             {
             showScreen('<span style="color: red;">No node has been selected!</span>');
@@ -229,6 +239,9 @@
 
     <div id="visualisation">
       <form name="input">
+        <p> Please select the tracing mechanism you would like to use:<p>
+          <input type="radio" name="mechanism" value="trace" CHECKED>Erlang built-in tracing and sampling<br>
+          <input type="radio" name="mechanism" value="dtrace">DTrace/SystemTap<br>
         <p> Please select the feature you would like to visualise:<p>
           <input type="radio" name="feature" value="rq" CHECKED>Run-queue length<br>
           <input type="radio" name="feature" value="migration">Process migration <br>

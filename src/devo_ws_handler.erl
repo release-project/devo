@@ -8,10 +8,11 @@
 -export([websocket_terminate/3]).
 
 -record(state, {
-               count =1          :: integer(),
-               cmd   = undefined :: any(),
-               nodes =[]         :: [node()],
-               data  = []        :: any()
+               count = 1             :: integer(),
+               cmd   = undefined     :: any(),
+               mechanism = undefined :: trace | dtrace,
+               nodes = []            :: [node()],
+               data  = []            :: any()
               }).                        
 
 init({tcp, http}, _Req, _Opts) ->
@@ -28,29 +29,32 @@ websocket_init(_TransportName, Req, _Opts) ->
     {ok, Req, #state{}}.
 
 websocket_handle({text, <<"stop">>}, Req, State) ->
+    Mechanism = State#state.mechanism,
     Cmd = State#state.cmd, 
     Nodes = State#state.nodes,
-    stop_profiling(Cmd, Nodes),
+    stop_profiling(Mechanism, Cmd, Nodes),
     {shutdown, Req, State};
 websocket_handle({text, <<"start">>}, Req, State) ->
     {ok, Req, State};
 websocket_handle({text, Msg}, Req, State) ->
-    MsgStr=binary_to_list(Msg),
+    MsgStr = binary_to_list(Msg),
     case string:tokens(MsgStr, ":") of 
-        ["start_profile","message_queue_len", NodeStr] ->
-            Nodes= string:tokens(NodeStr, ";"),
+        ["start_profile", "message_queue_len", NodeStr, Mechanism] ->
+            Nodes = string:tokens(NodeStr, ";"),
             Ns = [list_to_atom(N)||N<-Nodes],
-            Cmd=message_queue_len,
+            Cmd = message_queue_len,
+            M = list_to_atom(Mechanism),
             %% Hardcoded process name, will be removed.
-            start_profiling(Cmd, {sd_orbit, Ns}),
-            NewState=State#state{cmd=Cmd, nodes=Ns},
+            start_profiling(M, Cmd, {sd_orbit, Ns}),
+            NewState = State#state{mechanism=M, cmd=Cmd, nodes=Ns},
             {ok, Req, NewState};
-        ["start_profile",Feature, NodeStr] ->
+        ["start_profile", Feature, NodeStr, Mechanism] ->
             Nodes= string:tokens(NodeStr, ";"),
             Ns = [list_to_atom(N)||N<-Nodes],
             Cmd = list_to_atom(Feature),
-            start_profiling(Cmd, Ns),
-            NewState=State#state{cmd=Cmd, nodes=Ns},
+            M = list_to_atom(Mechanism),
+            start_profiling(M, Cmd, Ns),
+            NewState = State#state{mechanism=M, cmd=Cmd, nodes=Ns},
             {ok, Req, NewState};
         _ ->
             Msg = "Unexpected message from client:"++ binary_to_list(Msg),
@@ -134,7 +138,7 @@ websocket_terminate(_Reason, _Req, _State) ->
 	ok.
 
 
-start_profiling(rq, [Node|_]) ->
+start_profiling(trace, rq, [Node|_]) ->
     case rpc:call(Node, erlang, system_info, [cpu_topology]) of 
         {badrpc, Reason} ->
             io:format("Devo failed to start profiling for reason:\n~p\n",
@@ -150,7 +154,7 @@ start_profiling(rq, [Node|_]) ->
                 _ -> Res
             end
     end;
-start_profiling(migration, [Node|_]) ->
+start_profiling(trace, migration, [Node|_]) ->
     case rpc:call(Node, erlang, system_info, [cpu_topology]) of 
         {badrpc, Reason} ->
             io:format("Devo failed to start profiling for reason:\n~p\n",
@@ -160,7 +164,7 @@ start_profiling(migration, [Node|_]) ->
             erlang:start_timer(1, self(), <<"Online profiling started...!">>),
             devo_trace:start_trace(migration, Node, {devo, node()})
     end;
-start_profiling(rq_migration, [Node|_]) ->
+start_profiling(trace, rq_migration, [Node|_]) ->
     case rpc:call(Node, erlang, system_info, [cpu_topology]) of 
         {badrpc, Reason} ->
             io:format("Devo failed to start profiling for reason:\n~p\n",
@@ -178,7 +182,7 @@ start_profiling(rq_migration, [Node|_]) ->
                     devo_trace:start_trace(migration, Node, {devo, node()})
             end
     end;
-start_profiling(message_queue_len, {RegName, [Node|_]}) ->
+start_profiling(trace, message_queue_len, {RegName, [Node|_]}) ->
   %%  erlang:start_timer(1, self(), <<"Online profiling started...!">>),
     Res=rpc:call(Node, devo_sampling, start,
                  [[{message_queue_len, RegName}], infinity, none,{devo, node()}]),
@@ -188,7 +192,7 @@ start_profiling(message_queue_len, {RegName, [Node|_]}) ->
                       [Reason]);
         _ -> Res
     end;
-start_profiling(inter_node, Nodes=[N|_Ns]) ->
+start_profiling(trace, inter_node, Nodes=[N|_Ns]) ->
     case get_init_s_group_config(N) of 
         {badrpc, Reason} ->
             io:format("Devo failed to start profiling for reason:\n~p\n",
@@ -202,7 +206,7 @@ start_profiling(inter_node, Nodes=[N|_Ns]) ->
             erlang:start_timer(1, self(), <<"Online profiling started...!">>),
             devo_trace:start_trace(inter_node, Nodes, {devo, node()})            
     end;
-start_profiling(s_group, Nodes=[N|_Ns]) ->
+start_profiling(trace, s_group, Nodes=[N|_Ns]) ->
     case get_init_s_group_config(N) of 
         {badrpc, Reason} ->
             io:format("Devo failed to start profiling for reason:\n~p\n",
@@ -214,12 +218,15 @@ start_profiling(s_group, Nodes=[N|_Ns]) ->
             self()!{s_group_init_config, NodeGrps},
             devo_trace:start_trace(s_group, Nodes, {devo, node()})
     end;
-start_profiling(Cmd, _Nodes) ->
+start_profiling(trace, Cmd, _Nodes) ->
     io:format("start_profiling: unnexpected command:~p\n", [Cmd]),
+    ok;
+start_profiling(Mechanism, _Cmd, _Nodes) ->
+    io:format("start_profiling: unexpected tracing mechanism:~p\n", [Mechanism]),
     ok.
 
 
-stop_profiling(rq, [Node|_]) ->
+stop_profiling(trace, rq, [Node|_]) ->
     Res=rpc:call(Node, devo_sampling, stop,[]),
     case Res of 
         {badrpc, Reason} ->
@@ -228,7 +235,7 @@ stop_profiling(rq, [Node|_]) ->
         _ -> 
            Res
     end;
-stop_profiling(message_queue_len, [Node|_]) ->
+stop_profiling(trace, message_queue_len, [Node|_]) ->
     Res=rpc:call(Node, devo_sampling, stop,[]),
     case Res of 
         {badrpc, Reason} ->
@@ -238,9 +245,9 @@ stop_profiling(message_queue_len, [Node|_]) ->
            Res
     end;
 
-stop_profiling(migration, [_Node|_]) ->
+stop_profiling(trace, migration, [_Node|_]) ->
     devo_trace:stop_trace();
-stop_profiling(rq_migration, [Node|_]) ->
+stop_profiling(trace, rq_migration, [Node|_]) ->
     Res=rpc:call(Node, devo_sampling, stop,[]),
     case Res of 
         {badrpc, Reason} ->
@@ -251,15 +258,18 @@ stop_profiling(rq_migration, [Node|_]) ->
     end,
     erlang:start_timer(1, self(), stop_profile),
     devo_trace:stop_trace();
-stop_profiling(inter_node, _Nodes) ->
+stop_profiling(trace, inter_node, _Nodes) ->
     erlang:start_timer(1, self(), stop_profile),
     devo_trace:stop_trace();
-stop_profiling(s_group, _Nodes) ->
+stop_profiling(trace, s_group, _Nodes) ->
     devo_trace:stop_trace();
-stop_profiling(undefined,_) ->
+stop_profiling(trace, undefined,_) ->
     ok;
-stop_profiling(Cmd, _Nodes) ->
+stop_profiling(trace, Cmd, _Nodes) ->
     io:format("stop_profiling: unnexpected command:~p\n", [Cmd]),
+    ok;
+stop_profiling(Mechanism, _Cmd, _Nodes) ->
+    io:format("stop_profiling: unnexpected tracing mechanism:~p\n", [Mechanism]),
     ok. 
 
 get_init_s_group_config(Node) ->
