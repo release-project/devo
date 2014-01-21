@@ -121,10 +121,10 @@ function parseComms(commsFile){
 
 			var startAt = interactionDetails[0].indexOf("@");
 			//var startVal = j == 1 ? 3 : 2;
-			var start = interactionDetails[0].trim().substring(0,startAt);
+			var start = interactionDetails[0].trim().substring(1,startAt);
 
 			var finishAt = interactionDetails[1].indexOf("@");
-			var finish = interactionDetails[1].trim().substring(0,finishAt);
+			var finish = interactionDetails[1].trim().substring(1,finishAt);
 
 
 			var count = parseInt(interactionDetails[2]);
