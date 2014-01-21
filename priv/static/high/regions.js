@@ -97,7 +97,7 @@ function parseComms(commsFile){
 	//	var timeInstance = input[i];
 
 		var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
-		//var interactions = timeInstance.split(",!");
+	//	var interactions = timeInstance.split(",!");
 		
 		var timeInt = "";
 		//if (i == 0) {
@@ -134,10 +134,8 @@ function parseComms(commsFile){
 			var finishNode = findNode(finish, nodes);
 			//console.log(startNode, start, nodes);
 			var edge = new Edge(startNode, finishNode, count);
-			
-			
-			time.interactions.push( edge );
 
+			time.interactions.push( edge );
 			console.log(start, startNode, finish, finishNode, count);
 			//console.log(start, finish, count);
 		}
@@ -208,7 +206,7 @@ function parseHighTopology(input) {
 		var grpText = input.split("{");
 		for (var i = 2; i < grpText.length; i++){
 			var grpDetails = grpText[i].split(",");
-			var grpName = grpDetails[0];
+			var grpName = grpDetails[0].trim();
 
 			var id = String.fromCharCode(circles.length + 65);
 			var c = new Circle(id, grpName, 0, 0, 0);
@@ -224,7 +222,7 @@ function parseHighTopology(input) {
 				}
 				var at = rawNodeName.indexOf("@");
 				var start = j==1 ? 2 : 1;
-				var nodeName = rawNodeName.substring(start,at);
+				var nodeName = rawNodeName.substring(start,at).trim();
 
 				//console.log(nodeName);
 
@@ -299,6 +297,7 @@ function parseAddSGroup(input) {
 		
 		var start = j == 4 ? 2 : 1
 		var nodeName = rawName.substring(start, at);
+		console.log(j, "nodeName", nodeName);
 
 		var node = findNode(nodeName, nodes);
 
