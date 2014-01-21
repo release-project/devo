@@ -87,6 +87,7 @@ function parseComms(commsFile){
 	//var timeInstance = commsFile.split(",\n"); //replace when actually running from live stream data
 	//var timeInt = parseInt(interactions[0].substring(1));
 
+//{200,[{{node1@127.0.0.1,node2@127.0.0.1},1,240},{{node4@127.0.0.1,node3@127.0.0.1},3,152},{{node2@127.0.0.1,node4@127.0.0.1},22,46589}]}.
 
 
 	var timeInstance = commsFile;
@@ -96,8 +97,8 @@ function parseComms(commsFile){
 	//for (var i = 0; i < 2; i++){
 	//	var timeInstance = input[i];
 
-		var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
-	//	var interactions = timeInstance.split(",!");
+	//	var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
+		var interactions = timeInstance.split("{{");
 		
 		var timeInt = "";
 		//if (i == 0) {
@@ -119,11 +120,11 @@ function parseComms(commsFile){
 			//console.log(interactionDetails);
 
 			var startAt = interactionDetails[0].indexOf("@");
-			var startVal = j == 1 ? 3 : 2;
-			var start = interactionDetails[0].substring(startVal,startAt);
+			//var startVal = j == 1 ? 3 : 2;
+			var start = interactionDetails[0].trim().substring(0,startAt);
 
 			var finishAt = interactionDetails[1].indexOf("@");
-			var finish = interactionDetails[1].substring(0,finishAt);
+			var finish = interactionDetails[1].trim().substring(0,finishAt);
 
 
 			var count = parseInt(interactionDetails[2]);

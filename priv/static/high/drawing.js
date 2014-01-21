@@ -195,8 +195,8 @@ function findNodeStartY(d, i, multiplierSet){
 }
 
 function drawEdges(edges){
-	var svg = d3.select("svg");
 
+	var svg = d3.select("svg");
 	svg.selectAll("line").remove();
 
 	svg.selectAll("line")
@@ -204,7 +204,7 @@ function drawEdges(edges){
 		.enter()
 		.append("line")
 		.attr("x1", function(d){
-			//console.log(d);
+			console.log(d);
 			return d3.select("#"+d.source.label).attr("cx");
 		})
 		.attr("y1", function(d){
@@ -420,8 +420,8 @@ function deleteSGroup(circle) {
 function addNode(node) {
 	d3.select("svg").append("circle")
 		.attr("r",0)
-		.attr("cx",node.x)
-		.attr("cy",node.y)
+		.attr("cx",node.x * multiplier)
+		.attr("cy",node.y * multiplier)
 		.attr("id", node.label)
 		.attr("class","node")
 		.style("fill", "green")
