@@ -108,10 +108,10 @@ websocket_info(_Info={run_queues_info, Ts, Rqs}, Req, State) ->
     Str=lists:flatten([" "++integer_to_list(Len)++" "
                        ||Len<-tuple_to_list(Rqs)]),
     InfoStr=lists:flatten(io_lib:format("~p ~s", [Ts, Str])),
-    {reply, {text, list_to_binary(rm_whites(InfoStr))}, Req, State};
+    {reply, {text, list_to_binary(InfoStr)}, Req, State};
 websocket_info(_Info={message_queue_len_info, Ts, Len}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p ~p", [Ts, Len])),
-    {reply, {text, list_to_binary(rm_whites(InfoStr))}, Req, State};
+    {reply, {text, list_to_binary(InfoStr)}, Req, State};
 websocket_info(Info={s_group, _Node, _Fun, _Args}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
     {reply, {text, list_to_binary(rm_whites(InfoStr))}, Req, State};
