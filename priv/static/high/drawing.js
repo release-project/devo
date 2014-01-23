@@ -195,6 +195,8 @@ function findNodeStartY(d, i, multiplierSet){
 }
 
 function drawEdges(edges){
+
+	var svg = d3.select("svg");
 	svg.selectAll("line").remove();
 
 	svg.selectAll("line")
@@ -202,7 +204,7 @@ function drawEdges(edges){
 		.enter()
 		.append("line")
 		.attr("x1", function(d){
-			//console.log(d);
+			console.log(d);
 			return d3.select("#"+d.source.label).attr("cx");
 		})
 		.attr("y1", function(d){
@@ -416,7 +418,9 @@ function deleteSGroup(circle) {
 }
 
 function addNode(node) {
-	svg.append("circle")
+	console.log("drawing node: ", node, node.x, node.y, node.label);
+
+	d3.select("svg").append("circle")
 		.attr("r",0)
 		.attr("cx",node.x)
 		.attr("cy",node.y)
@@ -430,18 +434,16 @@ function addNode(node) {
 		.delay(3*duration/4)
 		.attr("r", 5)
 		.duration(duration/4)
-		.style("fill", "blue")
-		.append("svg:title")
-        .text(node.label);
-
-
+		.style("fill", "blue");
+		//.append("svg:title")
+        //.text(node.label);
 
 }
 
 function removeNode(node) {
-	//console.log("removing node", node);
+	console.log("removing node", node);
 
-	var nodeSvg = svg.select("#"+node.label);
+	var nodeSvg = d3.select("svg").select("#"+node.label);
 
 	nodeSvg.style("fill", "red")
 		.transition()

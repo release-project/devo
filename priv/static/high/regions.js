@@ -87,6 +87,7 @@ function parseComms(commsFile){
 	//var timeInstance = commsFile.split(",\n"); //replace when actually running from live stream data
 	//var timeInt = parseInt(interactions[0].substring(1));
 
+//{200,[{{node1@127.0.0.1,node2@127.0.0.1},1,240},{{node4@127.0.0.1,node3@127.0.0.1},3,152},{{node2@127.0.0.1,node4@127.0.0.1},22,46589}]}.
 
 
 	var timeInstance = commsFile;
@@ -96,8 +97,8 @@ function parseComms(commsFile){
 	//for (var i = 0; i < 2; i++){
 	//	var timeInstance = input[i];
 
-		var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
-		//var interactions = timeInstance.split(",!");
+	//	var interactions = timeInstance.split(",\n"); //replace when actually running from live stream data
+		var interactions = timeInstance.split("{{");
 		
 		var timeInt = "";
 		//if (i == 0) {
@@ -119,11 +120,11 @@ function parseComms(commsFile){
 			//console.log(interactionDetails);
 
 			var startAt = interactionDetails[0].indexOf("@");
-			var startVal = j == 1 ? 3 : 2;
-			var start = interactionDetails[0].substring(startVal,startAt);
+			//var startVal = j == 1 ? 3 : 2;
+			var start = interactionDetails[0].trim().substring(1,startAt);
 
 			var finishAt = interactionDetails[1].indexOf("@");
-			var finish = interactionDetails[1].substring(0,finishAt);
+			var finish = interactionDetails[1].trim().substring(1,finishAt);
 
 
 			var count = parseInt(interactionDetails[2]);
@@ -136,7 +137,7 @@ function parseComms(commsFile){
 			var edge = new Edge(startNode, finishNode, count);
 
 			time.interactions.push( edge );
-
+			console.log(start, startNode, finish, finishNode, count);
 			//console.log(start, finish, count);
 		}
 		edges = time.interactions;
@@ -206,7 +207,7 @@ function parseHighTopology(input) {
 		var grpText = input.split("{");
 		for (var i = 2; i < grpText.length; i++){
 			var grpDetails = grpText[i].split(",");
-			var grpName = grpDetails[0];
+			var grpName = grpDetails[0].trim();
 
 			var id = String.fromCharCode(circles.length + 65);
 			var c = new Circle(id, grpName, 0, 0, 0);
@@ -222,7 +223,7 @@ function parseHighTopology(input) {
 				}
 				var at = rawNodeName.indexOf("@");
 				var start = j==1 ? 2 : 1;
-				var nodeName = rawNodeName.substring(start,at);
+				var nodeName = rawNodeName.substring(start,at).trim();
 
 				//console.log(nodeName);
 
@@ -281,10 +282,11 @@ function parseAddSGroup(input) {
 
 	var grpDetails = input.split(",");
 
-	var sgroupName = grpDetails[3].substring(2);
+	var sgroupName = grpDetails[3].substring(1);
 	console.log(sgroupName, grpDetails);
 
-	var id = String.fromCharCode(circles.length + 65);
+	//var id = String.fromCharCode(circles.length + 65);
+	var id = findNextCircleKey(circles);
 
 	var circle = new Circle(id, sgroupName, -1, -1, -1);
 	circle.newCircle = true;
@@ -295,13 +297,15 @@ function parseAddSGroup(input) {
 		var rawName = grpDetails[j];
 		var at = rawName.indexOf("@");
 		
-		var start = j == 4 ? 3 : 1
+		var start = j == 4 ? 2 : 1
 		var nodeName = rawName.substring(start, at);
+		console.log(j, "nodeName", nodeName);
 
 		var node = findNode(nodeName, nodes);
 
 		if (node == null){
 			node = new Node(nodeName, null, id);
+			node.newNode = true;
 			nodes.push(node);
 		} else {
 			node.regionText = node.regionText + id;
@@ -374,7 +378,15 @@ function parseAddSGroupResponse(input) {
 
 	for (var i = 0; i < nodes.length; i++) {
 		var n = nodes[i];
+		console.log(n, n.region);
 		n.region = findRectangleFromLabel(n.regionText, rectangles);
+		if (n.newNode) {
+			console.log("need to draw Node: ", n);
+			n.x = findNodeStartX(n, nodes.length, false);
+			n.y = findNodeStartY(n, nodes.length, false);
+			addNode(n);
+			n.newNode = false;
+		}
 	}
 
 	for (var j = 0; j < circles.length; j++){
@@ -525,6 +537,8 @@ function parseRemoveNodes(input) {
 		var node = findNode(nodeName, nodes);
 		var nodeI = nodes.indexOf(node);
 		nodes.splice(nodeI, 1);
+
+		console.log(nodeName, node);
 		
 		removeNode(node);
 

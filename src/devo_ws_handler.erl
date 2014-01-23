@@ -7,6 +7,8 @@
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
 
+-compile(export_all).
+
 -record(state, {
                count =1          :: integer(),
                cmd   = undefined :: any(),
@@ -80,7 +82,7 @@ websocket_info({timeout, _Ref, _Msg}, Req, State) ->
                                       State#state.data]))
              end,
     erlang:start_timer(200, self(), <<"timeout">>),
-    {reply, {text, list_to_binary(StateStr)}, Req, 
+    {reply, {text, list_to_binary(rm_whites(StateStr))}, Req, 
      State#state{count=Cnt+1, data=[]}};
 websocket_info({trace_inter_node, From, To,MsgSize}, Req, State=#state{data=Data}) ->
     Key = {From, To},
@@ -112,14 +114,14 @@ websocket_info(_Info={message_queue_len_info, Ts, Len}, Req, State) ->
     {reply, {text, list_to_binary(InfoStr)}, Req, State};
 websocket_info(Info={s_group, _Node, _Fun, _Args}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
-    {reply, {text, list_to_binary(InfoStr)}, Req, State};
+    {reply, {text, list_to_binary(rm_whites(InfoStr))}, Req, State};
 
 websocket_info(Info={cpu, _Cpu}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
-    {reply, {text, list_to_binary(InfoStr)}, Req, State};
+    {reply, {text, list_to_binary(rm_whites(InfoStr))}, Req, State};
 websocket_info(Info={s_group_init_config, _Config}, Req, State) ->
     InfoStr=lists:flatten(io_lib:format("~p.", [Info])),
-    {reply, {text, list_to_binary(InfoStr)}, Req, State};
+    {reply, {text, list_to_binary(rm_whites(InfoStr))}, Req, State};
 websocket_info(start_profile, Req, State) ->
     erlang:start_timer(1, self(), <<"Online profiling started...!">>),
     {ok, Req, State};
@@ -277,3 +279,9 @@ grp_tuple({Name, Nodes}) ->
     {Name, Nodes};  
 grp_tuple({Name, _, Nodes}) ->
     {Name, Nodes}.
+
+
+rm_whites(Str) ->
+    [C||C<-Str, C=/=$\s, C=/=$\r,  C=/=$\n].
+         
+         

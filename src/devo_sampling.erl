@@ -291,6 +291,10 @@ stop(Pid) ->
 
 %%@private
 init(StartTs, Items, Interval, FilterFun, OutDir, Receiver)->
+    case whereis(devo_sampling) of 
+        undefined -> ok;
+        _ -> unregister(devo_sampling)
+    end,
     register(devo_sampling, self()),
     sampling_loop(StartTs,Interval,Items,FilterFun,OutDir, Receiver).
   

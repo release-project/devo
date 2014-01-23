@@ -1,0 +1,65 @@
+
+
+step1: update devo.
+
+cd devo
+git pull
+make
+
+cd tests
+erlc *.erl
+
+
+step2. start a worker nodes on another terminal
+
+cd tests
+./start.sh node1@127.0.0.1
+
+step3: start devo node on another window.
+
+cd devo
+
+./start.sh
+
+goto localhost:8080
+
+
+step4: run the visualisation.
+
+For the first three options, only one node can be monitored a time.
+
+1) add node1@127.0.0.1
+2) select one of the first three options.
+3) click node1@127.0.1 in the node list to highlight it. 
+4) click start/stop visualisation.
+
+now go to node1@127.0.0.1 and type
+
+orbit:run_on_one_node().
+
+you should be able to see the digram.
+
+
+=======to run orbit on 5 nodes===== 
+
+open another four terminals.
+
+cd tests
+./start.sh node2@127.0.0.1
+
+cd tests
+./start.sh node3@127.0.0.1
+
+
+cd tests
+./start.sh node4@127.0.0.1
+
+
+cd tests
+./start.sh node4@127.0.0.1
+
+
+goto node1@127.0.0.1, and type
+
+orbit:run_on_multi_nodes().
+
