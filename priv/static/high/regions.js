@@ -285,7 +285,8 @@ function parseAddSGroup(input) {
 	var sgroupName = grpDetails[3].substring(1);
 	console.log(sgroupName, grpDetails);
 
-	var id = String.fromCharCode(circles.length + 65);
+	//var id = String.fromCharCode(circles.length + 65);
+	var id = findNextCircleKey(circles);
 
 	var circle = new Circle(id, sgroupName, -1, -1, -1);
 	circle.newCircle = true;
@@ -304,6 +305,7 @@ function parseAddSGroup(input) {
 
 		if (node == null){
 			node = new Node(nodeName, null, id);
+			node.newNode = true;
 			nodes.push(node);
 		} else {
 			node.regionText = node.regionText + id;
@@ -376,7 +378,15 @@ function parseAddSGroupResponse(input) {
 
 	for (var i = 0; i < nodes.length; i++) {
 		var n = nodes[i];
+		console.log(n, n.region);
 		n.region = findRectangleFromLabel(n.regionText, rectangles);
+		if (n.newNode) {
+			console.log("need to draw Node: ", n);
+			n.x = findNodeStartX(n, nodes.length, false);
+			n.y = findNodeStartY(n, nodes.length, false);
+			addNode(n);
+			n.newNode = false;
+		}
 	}
 
 	for (var j = 0; j < circles.length; j++){

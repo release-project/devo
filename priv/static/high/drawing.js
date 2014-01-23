@@ -418,10 +418,12 @@ function deleteSGroup(circle) {
 }
 
 function addNode(node) {
+	console.log("drawing node: ", node, node.x, node.y, node.label);
+
 	d3.select("svg").append("circle")
 		.attr("r",0)
-		.attr("cx",node.x * multiplier)
-		.attr("cy",node.y * multiplier)
+		.attr("cx",node.x)
+		.attr("cy",node.y)
 		.attr("id", node.label)
 		.attr("class","node")
 		.style("fill", "green")

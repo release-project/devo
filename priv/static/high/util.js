@@ -35,6 +35,7 @@ function Node(label,region, regionText){
 	this.regionText = regionText;
 	horizontal = 0;
 	vertical = 0;
+	newNode = false;
 }
 
 function Edge(source, target, size){
@@ -222,4 +223,24 @@ function removeAll(arr1, arr2){
 	}
 	return result;
 
+}
+
+/**
+Finds the next free is for a circle
+*/
+function findNextCircleKey(circles) {
+	for (var i = 65; i < 123; i++) {
+		var found  = false;
+		for (var j = 0; j < circles.length; j++){
+			var c = circles[j];
+			//console.log(c.id.charCodeAt(0), i);
+			if (c.id.charCodeAt(0) == i) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			return String.fromCharCode(i);
+		}
+	}
 }
