@@ -221,6 +221,135 @@ start_profiling(trace, s_group, Nodes=[N|_Ns]) ->
 start_profiling(trace, Cmd, _Nodes) ->
     io:format("start_profiling: unnexpected command:~p\n", [Cmd]),
     ok;
+
+start_profiling(dtrace, rq, [Node|_]) ->
+    case rpc:call(Node, erlang, system_info, [cpu_topology]) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        Cpu ->
+            self() ! {cpu, Cpu},
+            case rpc:call(Node, devo_dtrace, start_trace, 
+                          [[run_queue_size], {devo, node()}]) of
+                {badrpc, Reason} ->
+                    io:format("Devo failed to start profiling for reason:\n~p\n",
+                              [Reason]);
+                Result -> 
+                    Result
+            end
+    end;
+start_profiling(dtrace, migration, [Node|_]) ->
+    case rpc:call(Node, erlang, system_info, [cpu_topology]) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        Cpu ->
+            self() ! {cpu, Cpu},
+            erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+            case rpc:call(Node, devo_dtrace, start_trace,
+                          [[process_migration], {devo, node()}]) of
+                {badrpc, Reason} ->
+                    io:format("Devo failed to start profiling for reason:\n~p\n",
+                              [Reason]);
+                Result ->
+                    Result
+            end
+    end;
+start_profiling(dtrace, rq_migration, [Node|_]) ->
+    case rpc:call(Node, erlang, system_info, [cpu_topology]) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        Cpu ->
+            self() ! {cpu, Cpu},
+            erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+            case rpc:call(Node, devo_dtrace, start_trace,
+                          [[process_migration, run_queue_size], 
+                          {devo, node()}]) of
+                {badrpc, Reason} ->
+                    io:format("Devo failed to start profiling for reason:\n~p\n",
+                              [Reason]);
+                Result ->     
+                    Result
+            end
+    end;
+start_profiling(dtrace, message_queue_len, {RegName, [Node|_]}) ->
+    case rpc:call(Node, devo_dtrace, start_trace,
+                  [[{message_queue_size, RegName}], {devo, node()}]) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        Result ->
+            Result
+    end;
+start_profiling(dtrace, inter_node, Nodes=[N|_Ns]) ->
+    case get_init_s_group_config(N) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        undefined ->
+            self() ! {s_group_init_config, []},
+            erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+            erlang:foreach(fun(Node) -> 
+                               case rpc:call(Node, devo_dtrace, start_trace,
+                                             [[inter_node_communication], 
+                                             {devo, node()}]) of
+                                   {badrpc, Reason} ->
+                                       io:format("Devo failed to start profiling for reason:\n~p\n",
+                                                 [Reason]);
+                                   Result ->
+                                       Result
+                               end
+                           end, Nodes);
+        {ok, NodeGrps} ->
+            self() ! {s_group_init_config, NodeGrps},
+            erlang:start_timer(1, self(), <<"Online profiling started...!">>),
+            erlang:foreach(fun(Node) ->
+                               case rpc:call(Node, devo_dtrace, start_trace,
+                                             [[inter_node_communication],
+                                             {devo, node()}]) of
+                                   {badrpc, Reason} ->
+                                       io:format("Devo failed to start profiling for reason:\n~p\n",
+                                                 [Reason]);
+                                   Result ->
+                                       Result
+                               end
+                           end, Nodes)
+    end;
+start_profiling(dtrace, s_group, Nodes=[N|_Ns]) ->
+    case get_init_s_group_config(N) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to start profiling for reason:\n~p\n",
+                      [Reason]);
+        undefined ->
+            self() ! {s_group_init_config, []},
+            erlang:foreach(fun(Node) ->
+                               case rpc:call(Node, devo_dtrace, start_trace,
+                                             [[s_group], {devo, node()}]) of
+                                   {badrpc, Reason} ->
+                                       io:format("Devo failed to start profiling for reason:\n~p\n",
+                                                 [Reason]);
+                                   Result ->
+                                       Result
+                               end
+                           end, Nodes);
+        {ok, NodeGrps} ->
+            self()!{s_group_init_config, NodeGrps},
+            erlang:foreach(fun(Node) ->
+                               case rpc:call(Node, devo_dtrace, start_trace,
+                                             [[s_group], {devo, node()}]) of
+                                   {badrpc, Reason} ->
+                                       io:format("Devo failed to start profiling for reason:\n~p\n",
+                                                 [Reason]);
+                                   Result ->
+                                       Result
+                               end
+                           end, Nodes)
+    end;
+start_profiling(dtrace, Cmd, _Nodes) ->
+    io:format("start_profiling: unnexpected command:~p\n", [Cmd]),
+    ok;
+
 start_profiling(Mechanism, _Cmd, _Nodes) ->
     io:format("start_profiling: unexpected tracing mechanism:~p\n", [Mechanism]),
     ok.
@@ -268,6 +397,67 @@ stop_profiling(trace, undefined,_) ->
 stop_profiling(trace, Cmd, _Nodes) ->
     io:format("stop_profiling: unnexpected command:~p\n", [Cmd]),
     ok;
+
+stop_profiling(dtrace, rq, [Node|_]) ->
+    case rpc:call(Node, devo_dtrace, stop_trace, []) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to stop profiling for reason:\n~p\n",
+                      [Reason]);
+        Result ->
+           Result
+    end;
+stop_profiling(dtrace, message_queue_len, [Node|_]) ->
+    case rpc:call(Node, devo_dtrace, stop_trace, []) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to stop profiling for reason:\n~p\n",
+                      [Reason]);
+        Result ->
+           Result
+    end;    
+stop_profiling(dtrace, migration, [Node|_]) ->
+    case rpc:call(Node, devo_dtrace, stop_trace, []) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to stop profiling for reason:\n~p\n",
+                      [Reason]);
+        Result ->
+           Result
+    end;
+stop_profiling(dtrace, rq_migration, [Node|_]) ->
+    case rpc:call(Node, devo_dtrace, stop_trace, []) of
+        {badrpc, Reason} ->
+            io:format("Devo failed to stop profiling for reason:\n~p\n",
+                      [Reason]);
+        Result ->
+           Result
+    end,
+    erlang:start_timer(1, self(), stop_profile);
+stop_profiling(dtrace, inter_node, Nodes) ->
+    lists:foreach(fun(Node) ->
+                      case rpc:call(Node, devo_dtrace, stop_trace, []) of
+                          {badrpc, Reason} ->
+                              io:format("Devo failed to stop profiling for reason:\n~p\n",
+                                        [Reason]);
+                          Result ->
+                              Result
+                      end
+                  end, Nodes),
+    erlang:start_timer(1, self(), stop_profile);
+stop_profiling(dtrace, s_group, Nodes) ->
+    lists:foreach(fun(Node) ->
+                      case rpc:call(Node, devo_dtrace, stop_trace, []) of
+                          {badrpc, Reason} ->
+                              io:format("Devo failed to stop profiling for reason:\n~p\n",
+                                        [Reason]);
+                          Result ->
+                              Result
+                      end
+                  end, Nodes);
+stop_profiling(dtrace, undefined,_) ->
+    ok;
+stop_profiling(dtrace, Cmd, _Nodes) ->
+    io:format("stop_profiling: unexpected command:~p\n", [Cmd]),
+    ok;
+
 stop_profiling(Mechanism, _Cmd, _Nodes) ->
     io:format("stop_profiling: unnexpected tracing mechanism:~p\n", [Mechanism]),
     ok. 
