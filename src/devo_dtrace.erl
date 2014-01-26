@@ -35,7 +35,12 @@ loop(DTFramework, ScriptF, Receiver) ->
                         OldRq ->
                             erlang:put({run_queue, Pid}, Rq),
                             Receiver ! { trace_rq, OldRq, Rq }
-                    end; 
+                    end;
+                { trace_inter_node, _, ToNode, _ } ->
+                    case ToNode == get_node_name(Receiver) of
+                        true -> ok;
+                        false -> Receiver ! M
+                    end;
                 _ -> 
                     Receiver ! M
             end,
@@ -131,7 +136,14 @@ gen_script_chunk(systemtap, {message_queue_size, P}) ->
                 "\tprintf(\"{ message_queue_len_info, %d.%d, %d }.\\n\", ",
                 ", diff/1000, diff%1000, message_queue_size)\n",
                 "}\n\n"])
-    end.
+    end;
+gen_script_chunk(systemtap, inter_node_communication) ->
+    N = node(),
+    fl(["probe process(\"", get_vm_executable(), "\").",
+        "mark(\"message-send-remote\") {\n",
+        "\tprintf(\"{ trace_inter_node, '", atom_to_list(N), "', %s, %d }.\\n\", ",
+        "user_string($arg2), $arg4 * 4)\n",
+        "}\n\n"]).
                           
 save_script(S) ->
     SFN = filename:join(["/tmp/",
@@ -153,4 +165,12 @@ get_vm_executable() ->
 
 fl(L) ->
     lists:flatten(L).
+
+get_node_name({_RegName, Node}) ->
+    Node;
+get_node_name(Arg) ->
+    try node(Arg)
+    catch _E1:_E2 ->
+            nonode
+    end.
 
