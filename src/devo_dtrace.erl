@@ -25,7 +25,20 @@ loop(DTFramework, ScriptF, Receiver) ->
         {_, {data, {eol, Data}}} ->
             {ok, Tokens, _} = erl_scan:string(Data),
             {ok, M} = erl_parse:parse_term(Tokens),
-            Receiver ! M,
+            case M of
+                { in_queue, Pid, Rq } ->
+                    case erlang:get({run_queue, Pid}) of
+                        undefined -> 
+                            erlang:put({run_queue, Pid}, Rq);
+                        Rq -> 
+                            ok;
+                        OldRq ->
+                            erlang:put({run_queue, Pid}, Rq),
+                            Receiver ! { trace_rq, OldRq, Rq }
+                    end; 
+                _ -> 
+                    Receiver ! M
+            end,
             loop(DTFramework, ScriptF, Receiver)
     end.
 
@@ -74,6 +87,18 @@ gen_script_chunk(systemtap, run_queue_size) ->
         "\t\t\tprintf(\", \")\n"
         "\t}\n",
         "\tprintf(\"} }.\\n\")\n" 
+        "}\n\n"]);
+gen_script_chunk(systemtap, process_migration) ->
+% Attempt #1: This probe was never fired.
+%    fl(["probe process(\"", get_vm_executable(), "\").",
+%        "mark(\"process-migrate\") {\n",
+%        "\tprintf(\"{ trace_rq, %d, %d }.\\n\", $arg2, $arg4)\n",
+%        "}\n\n"]).
+% Attempt #2
+    fl(["probe process(\"", get_vm_executable(), "\").",
+        "mark(\"process-scheduled\") {\n",
+        "\tprintf(\"{ in_queue, \\\"%s\\\", %d }.\\n\", ",
+        "user_string($arg1), $arg3)\n",
         "}\n\n"]).
 
 save_script(S) ->
