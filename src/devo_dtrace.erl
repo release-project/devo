@@ -99,8 +99,35 @@ gen_script_chunk(systemtap, process_migration) ->
         "mark(\"process-scheduled\") {\n",
         "\tprintf(\"{ in_queue, \\\"%s\\\", %d }.\\n\", ",
         "user_string($arg1), $arg3)\n",
-        "}\n\n"]).
-
+        "}\n\n"]);
+gen_script_chunk(systemtap, {message_queue_size, P}) ->
+    Pid = case is_atom(P) of
+              true -> whereis(P);
+              false -> P
+          end,
+    case Pid of 
+        undefined -> "";
+        _ -> 
+            S = lists:filter(fun(C) -> not lists:member(C, [10,32]) end,
+                             fl(io_lib:format("~p", [term_to_binary(Pid)]))),
+            fl(["global message_queue_size = 0\n",
+                "global t0\n\n",
+                "probe begin {\n",
+                "\tt0 = gettimeofday_ms()\n",
+                "}\n\n",
+                "probe process(\"", get_vm_executable(), "\").",
+                "mark(\"message-queued\") {\n",
+                "\tif(user_string($arg1) == \"", S, "\")\n",
+                "\tmessage_queue_size = $arg3\n",
+                "}\n\n",
+                "probe timer.ms(200) {\n",
+                "\tt1 = gettimeofday_ms()\n",
+                "\tdiff = t1 - t0\n",
+                "\tprintf(\"{ message_queue_len_info, %d.%d, %d }.\\n\", ",
+                ", diff/1000, diff%1000, message_queue_size)\n",
+                "}\n\n"])
+    end.
+                          
 save_script(S) ->
     SFN = filename:join(["/tmp/",
                          test_server:temp_name("devo-trace-script-")]),
