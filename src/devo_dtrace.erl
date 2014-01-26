@@ -143,8 +143,26 @@ gen_script_chunk(systemtap, inter_node_communication) ->
         "mark(\"message-send-remote\") {\n",
         "\tprintf(\"{ trace_inter_node, '", atom_to_list(N), "', %s, %d }.\\n\", ",
         "user_string($arg2), $arg4 * 4)\n",
+        "}\n\n"]);
+gen_script_chunk(systemtap, s_group) ->
+    N = node(),
+    fl(["probe process(\"", get_vm_executable(), "\").mark(\"user_trace-n0\") {\n",
+        "\tprintf(\"{ s_group, '", atom_to_list(N), "', new_s_group, [{%s, []}] }.\\n\", ",
+        "user_string($arg7))\n",
+        "}\n\n",
+        "probe process(\"", get_vm_executable(), "\").mark(\"user_trace-n1\") {\n",
+        "\tprintf(\"{ s_group, '", atom_to_list(N), "', delete_s_group, [%s] }.\\n\", ",
+        "user_string($arg7))\n",
+        "}\n\n",
+        "probe process(\"", get_vm_executable(), "\").mark(\"user_trace-n2\") {\n",
+        "\tprintf(\"{ s_group, '", atom_to_list(N), "', add_nodes, [%s, [%s]]}.\\n\", ",
+        "user_string($arg7), user_string($arg8))\n",
+        "}\n\n",
+        "probe process(\"", get_vm_executable(), "\").mark(\"user_trace-n2\") {\n",
+        "\tprintf(\"{ s_group, '", atom_to_list(N), "', remove_nodes, [%s, [%s]]}.\\n\", ",
+        "user_string($arg7), user_string($arg8))\n",
         "}\n\n"]).
-                          
+                         
 save_script(S) ->
     SFN = filename:join(["/tmp/",
                          test_server:temp_name("devo-trace-script-")]),
